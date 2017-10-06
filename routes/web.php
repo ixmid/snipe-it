@@ -154,6 +154,9 @@ Route::group([ 'prefix' => 'admin','middleware' => ['authorize:superuser']], fun
     Route::get('labels', ['as' => 'settings.labels.index','uses' => 'SettingsController@getLabels' ]);
     Route::post('labels', ['as' => 'settings.labels.save','uses' => 'SettingsController@postLabels' ]);
 
+    Route::get('zpl', ['as' => 'settings.zpl.index','uses' => 'SettingsController@getZplSettings' ]);
+    Route::post('zpl', ['as' => 'settings.zpl.save','uses' => 'SettingsController@postZplSettings' ]);
+
     Route::get('ldap', ['as' => 'settings.ldap.index','uses' => 'SettingsController@getLdapSettings' ]);
     Route::post('ldap', ['as' => 'settings.ldap.save','uses' => 'SettingsController@postLdapSettings' ]);
 

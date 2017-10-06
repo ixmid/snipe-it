@@ -128,6 +128,16 @@
       </div>
     </div>
 
+    <div class="col-md-4 col-lg-3 col-sm-6 col-xl-1">
+      <div class="box box-default">
+        <div class="box-body text-center">
+          <a href="{{ route('settings.zpl.index') }}" class="btn btn-lg btn-white"><i class="fa fa-print fa-3x"></i></a>
+          <br>
+          ZPL
+          <p class="help-block">ZPL printer configuration</p>
+        </div>
+      </div>
+    </div>
 
     <div class="col-md-4 col-lg-3 col-sm-6 col-xl-1">
       <div class="box box-default">

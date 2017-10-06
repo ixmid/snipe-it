@@ -450,7 +450,7 @@ Form::macro('barcode_types', function ($name = "barcode_type", $selected = null,
     $barcode_types = array(
         'QRCODE',
         'DATAMATRIX',
-
+        'ZPL'
     );
 
     $select = '<select name="'.$name.'" class="'.$class.'">';
