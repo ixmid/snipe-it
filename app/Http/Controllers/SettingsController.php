@@ -855,7 +855,44 @@ class SettingsController extends Controller
 
     }
 
+    /**
+     * Return a form to allow a super admin to update settings.
+     *
+     * @author [R. Schwab] [<r.schwab@ixmid.com>]
+     * @since [v4.0.10]
+     * @return View
+     */
+    public function getZplSettings()
+    {
+        $setting = Setting::first();
+        return view('settings.zpl', compact('setting'));
+    }
 
+
+    /**
+     * Saves settings from form
+     *
+     * @author [R. Schwab] [<r.schwab@ixmid.com>]
+     * @since [v4.0.10]
+     * @return View
+     */
+    public function postZplSettings(Request $request)
+    {
+
+        if (is_null($setting = Setting::first())) {
+            return redirect()->to('admin')->with('error', trans('admin/settings/message.update.error'));
+        }
+
+        $setting->zpl_printer = $request->input('zpl_printer');
+        $setting->zpl_template = $request->input('zpl_template');
+        $setting->zpl_print_on_asset_create = $request->input('zpl_print_on_asset_create');
+
+        if ($setting->save()) {
+            return redirect()->route('settings.index')
+                ->with('success', trans('admin/settings/message.update.success'));
+        }
+        return redirect()->back()->withInput()->withErrors($setting->getErrors());
+    }
 
 
 

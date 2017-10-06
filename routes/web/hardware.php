@@ -125,6 +125,22 @@ Route::group(
             ]
         );
 
+        Route::post(
+            'bulkzplprint',
+            [
+                'as'   => 'hardware/bulkzplprint',
+                'uses' => 'ZplPrintController@processLabelsFromBulkEdit'
+            ]
+        );
+
+        Route::post(
+            'zplprint',
+            [
+                'as'   => 'hardware/zplprint',
+                'uses' => 'ZplPrintController@printSingleLabel'
+            ]
+        );
+
         # Bulk checkout / checkin
          Route::get( 'bulkcheckout',  [
                  'as' => 'hardware/bulkcheckout',

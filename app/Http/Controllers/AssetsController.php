@@ -38,6 +38,7 @@ use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use TCPDF;
 use Validator;
 use View;
+use Route;
 
 /**
  * This class controls all actions related to assets for
@@ -231,9 +232,18 @@ class AssetsController extends Controller
             if (isset($target)) {
                 $asset->checkOut($target, Auth::user(), date('Y-m-d H:i:s'), '', 'Checked out on asset creation', e(Input::get('name')));
             }
-            // Redirect to the asset listing page
-            \Session::flash('success', trans('admin/hardware/message.create.success'));
-            return response()->json(['redirect_url' => route('hardware.index')]);
+
+            // Print ZPL label
+            $settings = Setting::getSettings();
+            if($settings->zpl_print_on_asset_create === 1) {
+                $zplController = new ZplPrintController();
+                return $zplController->outputAssetLabelsToZPL(array($asset->id), 'ajax');
+            } else {
+                // Redirect to the asset listing page
+                \Session::flash('success', trans('admin/hardware/message.create.success'));
+                return response()->json(['redirect_url' => route('hardware.index')]);
+            }
+
         }
         \Input::flash();
         \Session::flash('errors', $asset->getErrors());
@@ -1033,6 +1043,9 @@ class AssetsController extends Controller
                     ->with('settings', Setting::getSettings())
                     ->with('count', $count)
                     ->with('settings', Setting::getSettings());
+            } elseif ($request->input('bulk_actions')=='print') {
+                return view('hardware/bulk-print')
+                ->with('assets', request('ids'));
             } elseif ($request->input('bulk_actions')=='delete') {
                 $assets = Asset::with('assignedTo', 'assetloc')->find($asset_ids);
                 $assets->each(function ($asset) {
