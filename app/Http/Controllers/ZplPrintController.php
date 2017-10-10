@@ -13,6 +13,7 @@ use Str;
 use View;
 use App\Models\Asset;
 use Redirect;
+use App\Models\CustomField;
 
 use Log;
 
@@ -24,7 +25,6 @@ use App\Http\Requests\AssetRequest;
 use App\Http\Requests\ItemImportRequest;
 use App\Models\Actionlog;
 use App\Models\AssetModel;
-use App\Models\CustomField;
 use App\Models\Import;
 use App\Models\Location;
 use App\Models\User;
@@ -271,8 +271,11 @@ LABEL_START
                 socket_write($socket, '^FN6^FDN: '.html_entity_decode($asset->model->model_number).'^FS');
             }
 
+            // Prefer a custom field over serial if available
+            if($this->settings->zpl_serial_alternative!='' && $asset->model->fieldset && $asset->{$this->settings->zpl_serial_alternative}!='') {
+               socket_write($socket, '^FN7^FDS: '.$asset->{$this->settings->zpl_serial_alternative}.'^FS');
             // Asset Serial
-            if($asset->serial!='') {
+            } elseif ($asset->serial!='') {
                 socket_write($socket, '^FN7^FDS: '.$asset->serial.'^FS');
             }
 

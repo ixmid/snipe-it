@@ -68,6 +68,15 @@
                                 <p>^XZ</p>
                             </div>
                         </div>
+                        <!-- Custom field overriding serial when available -->
+                        <div class="form-group}}">
+                            <div class="col-md-3">
+                                Custom field overriding serial when available
+                            </div>
+                            <div class="col-md-9">
+                                {{ Form::text('zpl_serial_alternative', Input::old('zpl_serial_alternative', $setting->zpl_serial_alternative), array('class' => 'form-control', 'placeholder' => 'Ex: _snipeit_servicetag_2')) }}
+                            </div>
+                        </div>
                     </div>
                 </div> <!--/.box-body-->
                 <div class="box-footer">
