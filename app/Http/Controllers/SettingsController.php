@@ -886,6 +886,7 @@ class SettingsController extends Controller
         $setting->zpl_printer = $request->input('zpl_printer');
         $setting->zpl_template = $request->input('zpl_template');
         $setting->zpl_print_on_asset_create = $request->input('zpl_print_on_asset_create');
+        $setting->zpl_serial_alternative = $request->input('zpl_serial_alternative');
 
         if ($setting->save()) {
             return redirect()->route('settings.index')
