@@ -45,13 +45,12 @@ class CheckoutNotification extends Notification
         $item = $this->params['item'];
 
         if (class_basename(get_class($this->params['item']))=='Asset') {
-            $notifyBy[] = 'mail';
+            if ((method_exists($item, 'requireAcceptance') && ($item->requireAcceptance() == '1'))
+                || (method_exists($item, 'getEula') && ($item->getEula()))
+            ) {
+                $notifyBy[] = 'mail';
+            }
         }
-        // if ((method_exists($item, 'requireAcceptance') && ($item->requireAcceptance()=='1'))
-        //     || (method_exists($item, 'getEula') && ($item->getEula()))
-        // ) {
-        //     $notifyBy[] = 'mail';
-        // }
         return $notifyBy;
     }
 
@@ -83,6 +82,7 @@ class CheckoutNotification extends Notification
      */
     public function toMail($notifiable)
     {
+        if (class_basename(get_class($this->params['item']))=='Asset') {
 
             //TODO: Expand for non assets.
             $item = $this->params['item'];
@@ -104,9 +104,14 @@ class CheckoutNotification extends Notification
                 'model_number' => $item->model->model_number,
             ];
 
-            return (new MailMessage)
-                ->view('emails.accept-asset', $data)
-                ->subject(trans('mail.Confirm_asset_delivery'));
+            if ((method_exists($item, 'requireAcceptance') && ($item->requireAcceptance() == '1'))
+                || (method_exists($item, 'getEula') && ($item->getEula()))
+            ) {
+                return (new MailMessage)
+                    ->view('emails.accept-asset', $data)
+                    ->subject(trans('mail.Confirm_asset_delivery'));
+            }
+        }
 
 
 

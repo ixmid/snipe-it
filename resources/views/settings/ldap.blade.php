@@ -328,26 +328,58 @@
                         </div>
 
 
+                        @if ($setting->ldap_enabled)
                         <!-- LDAP test -->
                         <div class="form-group {{ $errors->has('ldap_email') ? 'error' : '' }}">
                             <div class="col-md-3">
-                                Test LDAP Connection
+                                Test LDAP Sync
+                            </div>
+                            <div class="col-md-9" id="ldaptestrow">
+                                        <a class="btn btn-default btn-sm pull-left" id="ldaptest" style="margin-right: 10px;">Test LDAP</a>
+                            </div>
+                            <div class="col-md-9 col-md-offset-3">
+                                <span id="ldaptesticon"></span>
+                                <span id="ldaptestresult"></span>
+                                <span id="ldapteststatus"></span>
+                            </div>
+                            <div class="col-md-9 col-md-offset-3">
+                                <p class="help-block">This only tests that LDAP can sync correctly. If your LDAP Authentication query is not correct, users may still not be able to login.</p>
+                            </div>
+
+                        </div>
+                        <!-- LDAP Login test -->
+                        <div class="form-group {{ $errors->has('ldap_email') ? 'error' : '' }}">
+                            <div class="col-md-3">
+                                Test LDAP Login
                             </div>
                             <div class="col-md-9">
-                                <div id="ldaptestrow">
-                                    <div class="col-md-8">
-                                        <a class="btn btn-default btn-sm pull-left" id="ldaptest" style="margin-right: 10px;"> Test LDAP</a>
-                                        <span id="ldaptesticon"></span>
-                                        <span id="ldaptestresult"></span>
-                                        <span id="ldapteststatus"></span>
-                                    </div>
+                                <div class="row">
+                                <div class="col-md-4">
+                                    <input type="text" name="ldaptest_user" id="ldaptest_user"  class="form-control" placeholder="LDAP username">
                                 </div>
-                            </div>
-                        </div>
+                                <div class="col-md-4">
+                                <input type="password" name="ldaptest_password" id="ldaptest_password" class="form-control" placeholder="LDAP password">
+                                </div>
+                                <div class="col-md-3">
+                                    <a class="btn btn-default btn-sm" id="ldaptestlogin" style="margin-right: 10px;">Test LDAP</a>
+                                </div>
 
+
+                            </div>
+                            </div>
+                            <div class="col-md-9 col-md-offset-3">
+                                <span id="ldaptestloginicon"></span>
+                                <span id="ldaptestloginresult"></span>
+                                <span id="ldaptestloginstatus"></span>
+                            </div>
+                            <div class="col-md-9 col-md-offset-3">
+                                <p class="help-block">Enter a valid LDAP username and password to test whether your LDAP login is configured correctly.</p>
+                            </div>
+
+                        </div>
+                       @endif
 
                     </div>
-
                 </div> <!--/.box-body-->
                 <div class="box-footer">
                     <div class="text-left col-md-6">
@@ -374,32 +406,108 @@
 @section('moar_scripts')
     <script nonce="{{ csrf_token() }}">
         $("#ldaptest").click(function(){
-            $("#ldaptestrow").removeClass('success');
-            $("#ldaptestrow").removeClass('danger');
+            $("#ldaptestrow").removeClass('text-success');
+            $("#ldaptestrow").removeClass('text-danger');
             $("#ldapteststatus").html('');
-            $("#ldaptesticon").html('<i class="fa fa-spinner spin"></i>');
+            $("#ldaptesticon").html('<i class="fa fa-spinner spin"></i> Testing...');
             $.ajax({
                 url: '{{ route('api.settings.ldaptest') }}',
                 type: 'GET',
+                headers: {
+                    "X-Requested-With": 'XMLHttpRequest',
+                    "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content')
+                },
                 data: {},
                 dataType: 'json',
 
                 success: function (data) {
-                    // console.dir(data);
-                    //console.log(data.responseJSON.message);
                     $("#ldaptesticon").html('');
-                    $("#ldaptestrow").addClass('success');
+                    $("#ldapteststatus").addClass('text-success');
                     $("#ldapteststatus").html('<i class="fa fa-check text-success"></i> It worked!');
                 },
 
                 error: function (data) {
-                    console.dir(data);
-                    console.log(data.responseJSON.message);
+                    //console.dir(data);
                     $("#ldaptesticon").html('');
-                    $("#ldaptestrow").addClass('danger');
+                    $("#ldapteststatus").addClass('text-danger');
                     $("#ldaptesticon").html('<i class="fa fa-exclamation-triangle text-danger"></i>');
-                    $('#ldapteststatus').text(data.responseJSON.message);
+
+                    if (data.status == 500) {
+                        $('#ldapteststatus').html('500 Server Error');
+                    } else if (data.status == 400) {
+
+                        for (i = 0; i < errors.length; i++) {
+                            if (errors[i]) {
+                                error_text += '<li>Error: ' + errors[i];
+                            }
+
+                        }
+                        $('#ldapteststatus').html(error_text);
+                    } else {
+                        $('#ldapteststatus').html(data.responseText.message);
+                    }
                 }
+
+
+            });
+        });
+
+        $("#ldaptestlogin").click(function(){
+            $("#ldaptestloginrow").removeClass('text-success');
+            $("#ldaptestloginrow").removeClass('text-danger');
+            $("#ldaptestloginstatus").html('');
+            $("#ldaptestloginicon").html('<i class="fa fa-spinner spin"></i> Testing...');
+            $.ajax({
+                url: '{{ route('api.settings.ldaptestlogin') }}',
+                type: 'POST',
+                headers: {
+                    "X-Requested-With": 'XMLHttpRequest',
+                    "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content')
+                },
+                data: {
+                    'ldaptest_user': $('#ldaptest_user').val(),
+                    'ldaptest_password': $('#ldaptest_password').val()
+                },
+
+                dataType: 'json',
+
+                success: function (data) {
+                    $("#ldaptestloginicon").html('');
+                    $("#ldaptestloginrow").addClass('text-success');
+                    $("#ldaptestloginstatus").html('<i class="fa fa-check text-success"></i> It worked!');
+                },
+
+                error: function (data) {
+
+                    if (data.responseJSON) {
+                        var errors = data.responseJSON.message;
+                    } else {
+                        var errors;
+                    }
+
+                    var error_text;
+
+                    $("#ldaptestloginicon").html('');
+                    $("#ldaptestloginstatus").addClass('text-danger');
+                    $("#ldaptestloginicon").html('<i class="fa fa-exclamation-triangle text-danger"></i>');
+
+                    if (data.status == 500) {
+                        $('#ldaptestloginstatus').html('500 Server Error');
+                    } else if (data.status == 400) {
+
+                        for (i = 0; i < errors.length; i++) {
+                            if (errors[i]) {
+                                error_text += '<li>Error: ' + errors[i];
+                            }
+
+                        }
+                        $('#ldaptestloginstatus').html(error_text);
+                    } else {
+                        $('#ldaptestloginstatus').html(data.responseText.message);
+                    }
+                }
+
+
 
 
             });

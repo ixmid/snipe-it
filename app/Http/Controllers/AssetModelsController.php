@@ -17,6 +17,7 @@ use App\Models\Company;
 use Config;
 use App\Helpers\Helper;
 use Illuminate\Http\Request;
+use App\Http\Requests\ImageUploadRequest;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 
@@ -68,7 +69,7 @@ class AssetModelsController extends Controller
     * @since [v1.0]
     * @return Redirect
     */
-    public function store(Request $request)
+    public function store(ImageUploadRequest $request)
     {
 
         // Create a new asset model
@@ -90,14 +91,21 @@ class AssetModelsController extends Controller
         }
 
         if (Input::file('image')) {
+
             $image = Input::file('image');
-            $file_name = str_random(25).".".$image->getClientOriginalExtension();
-            $path = public_path('uploads/models/'.$file_name);
-            Image::make($image->getRealPath())->resize(500, null, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            })->save($path);
+            $file_name = str_random(25) . "." . $image->getClientOriginalExtension();
+            $path = public_path('uploads/models/');
+
+            if ($image->getClientOriginalExtension()!='svg') {
+                Image::make($image->getRealPath())->resize(500, null, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                })->save($path.'/'.$file_name);
+            } else {
+                $image->move($path, $file_name);
+            }
             $model->image = $file_name;
+
         }
 
             // Was it created?
@@ -180,7 +188,7 @@ class AssetModelsController extends Controller
     * @param int $modelId
     * @return Redirect
     */
-    public function update(Request $request, $modelId = null)
+    public function update(ImageUploadRequest $request, $modelId = null)
     {
         // Check if the model exists
         if (is_null($model = AssetModel::find($modelId))) {
@@ -206,13 +214,19 @@ class AssetModelsController extends Controller
 
         if (Input::file('image')) {
             $image = Input::file('image');
-            $file_name = str_random(25).".".$image->getClientOriginalExtension();
-            $path = public_path('uploads/models/'.$file_name);
-            Image::make($image->getRealPath())->resize(300, null, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            })->save($path);
+            $file_name = str_random(25) . "." . $image->getClientOriginalExtension();
+            $path = public_path('uploads/models/');
+
+            if ($image->getClientOriginalExtension()!='svg') {
+                Image::make($image->getRealPath())->resize(500, null, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                })->save($path.'/'.$file_name);
+            } else {
+                $image->move($path, $file_name);
+            }
             $model->image = $file_name;
+
         }
 
         if ($request->input('image_delete') == 1 && Input::file('image') == "") {
@@ -351,49 +365,6 @@ class AssetModelsController extends Controller
     }
 
 
-
-    /**
-     * Get the asset information to present to the model view detail page
-     *
-     * @author [A. Gianotto] [<snipe@snipe.net>]
-     * @since [v2.0]
-     * @param Request $request
-     * @param $modelID
-     * @return String JSON
-     * @internal param int $modelId
-     */
-    public function getDataView(Request $request, $modelID)
-    {
-        $assets = Asset::where('model_id', '=', $modelID)->with('company', 'assetstatus');
-
-        if (Input::has('search')) {
-            $assets = $assets->TextSearch(e($request->input('search')));
-        }
-        $offset = request('offset', 0);
-        $limit = request('limit', 50);
-
-
-        $allowed_columns = ['name', 'serial','asset_tag'];
-        $order = $request->input('order') === 'asc' ? 'asc' : 'desc';
-        $sort = in_array($request->input('sort'), $allowed_columns) ? e($request->input('sort')) : 'created_at';
-
-        $assets = $assets->orderBy($sort, $order);
-
-        $assetsCount = $assets->count();
-        $assets = $assets->skip($offset)->take($limit)->get();
-
-        $rows = array();
-
-        $all_custom_fields = CustomField::all();
-        foreach ($assets as $asset) {
-
-            $rows[] = $asset->present()->forDataTable($all_custom_fields);
-        }
-
-        $data = array('total' => $assetsCount, 'rows' => $rows);
-
-        return $data;
-    }
 
 
     /**

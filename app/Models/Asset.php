@@ -487,7 +487,7 @@ class Asset extends Depreciable
         } elseif ($this->model->category->use_default_eula == '1') {
             return $Parsedown->text(e(Setting::getSettings()->default_eula_text));
         } else {
-            return null;
+            return false;
         }
     }
 
@@ -815,6 +815,7 @@ class Asset extends Depreciable
     {
         return $query->where(function ($query) use ($filter) {
             foreach ($filter as $key => $search_val) {
+                
                 if ($key =='asset_tag') {
                     $query->where('assets.asset_tag', 'LIKE', '%'.$search_val.'%');
                 }
@@ -856,10 +857,10 @@ class Asset extends Depreciable
                 }
 
                 if ($key =='checkedout_to') {
-                    $query->whereHas('assigneduser', function ($query) use ($search) {
-                        $query->where(function ($query) use ($search) {
-                            $query->where('users.first_name', 'LIKE', '%' . $search . '%')
-                                ->orWhere('users.last_name', 'LIKE', '%' . $search . '%');
+                    $query->whereHas('assigneduser', function ($query) use ($search_val) {
+                        $query->where(function ($query) use ($search_val) {
+                            $query->where('users.first_name', 'LIKE', '%' . $search_val . '%')
+                                ->orWhere('users.last_name', 'LIKE', '%' . $search_val . '%');
                         });
                     });
                 }
@@ -876,8 +877,8 @@ class Asset extends Depreciable
                 }
 
                 if ($key =='category') {
-                    $query->whereHas('model', function ($query) use ($search) {
-                        $query->whereHas('category', function ($query) use ($search) {
+                    $query->whereHas('model', function ($query) use ($search_val) {
+                        $query->whereHas('category', function ($query) use ($search_val) {
                             $query->where(function ($query) use ($search_val) {
                                 $query->where('categories.name', 'LIKE', '%' . $search_val . '%')
                                     ->orWhere('models.name', 'LIKE', '%' . $search_val . '%')
@@ -914,11 +915,13 @@ class Asset extends Depreciable
             }
 
             foreach (CustomField::all() as $field) {
-                if (array_key_exists($field->db_column_name(), $filter)) {
-                    $query->orWhere($field->db_column_name(), 'LIKE', "%$search_val%");
-                }
+                if (array_key_exists('custom_fields.'.$field->db_column_name(), $filter)) {
+                    $query->orWhere($field->db_column_name(), 'LIKE', '%' . $search_val . '%');
+                } 
             }
+
         });
+
     }
 
 

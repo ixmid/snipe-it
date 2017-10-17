@@ -16,7 +16,7 @@ class LdapSync extends Command
      *
      * @var string
      */
-    protected $signature = 'snipeit:ldap-sync {--location=} {--location_id=} {--summary}';
+    protected $signature = 'snipeit:ldap-sync {--location=} {--location_id=} {--summary} {--json_summary}';
 
     /**
      * The console command description.
@@ -55,27 +55,35 @@ class LdapSync extends Command
 
         try {
             $ldapconn = Ldap::connectToLdap();
-        } catch (\Exception $e) {
-            LOG::error($e);
-        }
-
-        try {
             Ldap::bindAdminToLdap($ldapconn);
         } catch (\Exception $e) {
+            if ($this->option('json_summary')) {
+                $json_summary = [ "error" => true, "error_message" => $e->getMessage(), "summary" => [] ];
+                $this->info(json_encode($json_summary));
+            }
             LOG::error($e);
+            return [];
         }
 
         $summary = array();
 
         $results = Ldap::findLdapUsers();
 
-        $ldap_ou_locations = Location::whereNotNull('ldap_ou')->get();
-
+        // Retrieve locations with a mapped OU, and sort them from the shallowest to deepest OU (see #3993)
+        $ldap_ou_locations = Location::whereNotNull('ldap_ou')->get()->toArray();
+        $ldap_ou_lengths = array();
+        
+        foreach ($ldap_ou_locations as $location) {
+            $ldap_ou_lengths[] = strlen($location["ldap_ou"]);
+        }
+        
+        array_multisort($ldap_ou_lengths, SORT_ASC, $ldap_ou_locations);
+        
         if (sizeof($ldap_ou_locations) > 0) {
             LOG::debug('Some locations have special OUs set. Locations will be automatically set for users in those OUs.');
         }
 
-        $results = Ldap::findLdapUsers();
+        // Inject location information fields
         for ($i = 0; $i < $results["count"]; $i++) {
             $results[$i]["ldap_location_override"] = false;
             $results[$i]["location_id"] = 0;
@@ -90,8 +98,8 @@ class LdapSync extends Command
             LOG::debug('Location ID '.$this->option('location_id').' passed');
             LOG::debug('Importing to '.$location->name.' ('.$location->id.')');
         } else {
-	    $location = NULL;
-	}
+	        $location = NULL;
+	    }
 
         if (!isset($location)) {
             LOG::debug('That location is invalid or a location was not provided, so no location will be assigned by default.');
@@ -99,11 +107,11 @@ class LdapSync extends Command
 
         // Grab subsets based on location-specific DNs, and overwrite location for these users.
         foreach ($ldap_ou_locations as $ldap_loc) {
-            $location_users = Ldap::findLdapUsers($ldap_loc->ldap_ou);
+            $location_users = Ldap::findLdapUsers($ldap_loc["ldap_ou"]);
             $usernames = array();
             for ($i = 0; $i < $location_users["count"]; $i++) {
                 $location_users[$i]["ldap_location_override"] = true;
-                $location_users[$i]["location_id"] = $ldap_loc->id;
+                $location_users[$i]["location_id"] = $ldap_loc["id"];
                 $usernames[] = $location_users[$i][$ldap_result_username][0];
             }
 
@@ -135,6 +143,14 @@ class LdapSync extends Command
                 $item["ldap_location_override"] = isset($results[$i]["ldap_location_override"]) ? $results[$i]["ldap_location_override"]:"";
                 $item["location_id"] = isset($results[$i]["location_id"]) ? $results[$i]["location_id"]:"";
 
+                if ( array_key_exists('useraccountcontrol', $results[$i]) ) {
+                    $enabled_accounts = [
+                        '512', '544', '66048', '66080', '262656', '262688', '328192', '328224'
+                    ];
+                    $item['activated'] = ( in_array($results[$i]['useraccountcontrol'][0], $enabled_accounts) ) ? 1 : 0;
+                } else {
+                    $item['activated'] = 0;
+                }
 
                 // User exists
                 $item["createorupdate"] = 'updated';
@@ -145,14 +161,12 @@ class LdapSync extends Command
                 }
 
                 // Create the user if they don't exist.
-
-
                 $user->first_name = e($item["firstname"]);
                 $user->last_name = e($item["lastname"]);
                 $user->username = e($item["username"]);
                 $user->email = e($item["email"]);
                 $user->employee_num = e($item["employee_number"]);
-                $user->activated = 1;
+                $user->activated = $item['activated'];
 
                 if ($item['ldap_location_override'] == true) {
                     $user->location_id = $item['location_id'];
@@ -188,13 +202,12 @@ class LdapSync extends Command
                 } else {
                     $this->info('User '.$summary[$x]['firstname'].' '.$summary[$x]['lastname'].' (username:  '.$summary[$x]['username'].' was '.strtoupper($summary[$x]['createorupdate']).'.');
                 }
-
             }
+        } else if ($this->option('json_summary')) {
+            $json_summary = [ "error" => false, "error_message" => "", "summary" => $summary ];
+            $this->info(json_encode($json_summary));
         } else {
             return $summary;
         }
-
-
-
     }
 }

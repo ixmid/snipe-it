@@ -442,7 +442,7 @@ class AssetsController extends Controller
         // Get the dropdown of users and then pass it to the checkout view
         return view('hardware/checkout', compact('asset'))
             ->with('users_list', Helper::usersList())
-            ->with('assets_list', Helper::assetsList())
+            ->with('assets_list', Helper::detailedAssetList())
             ->with('locations_list', Helper::locationsList());
     }
 
@@ -686,7 +686,8 @@ class AssetsController extends Controller
                 return response()->file($barcode_file, $header);
             } else {
                 $barcode = new \Com\Tecnick\Barcode\Barcode();
-                $barcode_obj = $barcode->getBarcodeObj($settings->alt_barcode, $asset->asset_tag, 250, 20);
+                $barcode_obj = $barcode->getBarcodeObj($settings->alt_barcode,$asset->asset_tag,300,50);
+
                 file_put_contents($barcode_file, $barcode_obj->getPngData());
                 return response($barcode_obj->getPngData())->header('Content-type', 'image/png');
             }
