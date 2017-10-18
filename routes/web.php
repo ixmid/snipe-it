@@ -193,7 +193,10 @@ Route::group([ 'prefix' => 'admin','middleware' => ['authorize:superuser']], fun
     Route::get('requests', [ 'as' => 'requests', 'middleware' => 'authorize:admin', 'uses' => 'ViewAssetsController@getRequestedIndex']);
 
 
-
+    Route::resource('groups', 'GroupsController', [
+        'middleware' => ['auth'],
+        'parameters' => ['group' => 'group_id']
+    ]);
 
     Route::get('/', ['as' => 'settings.index', 'uses' => 'SettingsController@index' ]);
 
@@ -201,10 +204,7 @@ Route::group([ 'prefix' => 'admin','middleware' => ['authorize:superuser']], fun
 });
 
 
-Route::resource('groups', 'GroupsController', [
-    'middleware' => ['auth'],
-    'parameters' => ['group' => 'group_id']
-]);
+
 
 /*
 |--------------------------------------------------------------------------
