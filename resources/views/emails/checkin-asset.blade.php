@@ -28,7 +28,7 @@
 	@if (isset($manufacturer_name))
 		<tr>
 			<td style="background-color:#ccc">
-				Hersteller:
+				{{ trans('general.manufacturer') }}
 			</td>
 			<td>
 				<strong>{{ $manufacturer_name }}</strong>
@@ -38,7 +38,7 @@
 	@if (isset($model_name))
 		<tr>
 			<td style="background-color:#ccc">
-				Modell:
+				{{ trans('general.model_no') }}:
 			</td>
 			<td>
 				<strong>{{ $model_name }}</strong>
@@ -48,7 +48,7 @@
 	@if (isset($model_number))
 		<tr>
 			<td style="background-color:#ccc">
-				Modellnummer:
+				{{ trans('general.asset_model') }}:
 			</td>
 			<td>
 				<strong>{{ $model_number }}</strong>
@@ -75,5 +75,10 @@
 	@endif
 </table>
 
-<p><a href="{{ url('/') }}">{{ $snipeSettings->site_name }}</a></p>
+@if ($snipeSettings->show_url_in_emails=='1')
+	<p><a href="{{ url('/') }}">{{ $snipeSettings->site_name }}</a></p>
+@else
+	<p>{{ $snipeSettings->site_name }}</p>
+@endif
+
 @stop
