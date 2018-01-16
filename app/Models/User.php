@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Http\Traits\UniqueUndeletedTrait;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
+use DB;
 
 class User extends SnipeModel implements AuthenticatableContract, CanResetPasswordContract
 {
@@ -423,6 +424,7 @@ class User extends SnipeModel implements AuthenticatableContract, CanResetPasswo
                 ->orWhere('users.phone', 'LIKE', "%$search%")
                 ->orWhere('users.jobtitle', 'LIKE', "%$search%")
                 ->orWhere('users.employee_num', 'LIKE', "%$search%")
+                ->orWhereRaw('CONCAT('.DB::getTablePrefix().'users.first_name," ",'.DB::getTablePrefix().'users.last_name) LIKE ?', ["%$search%", "%$search%"])
                 ->orWhere(function ($query) use ($search) {
                     $query->whereHas('userloc', function ($query) use ($search) {
                         $query->where('locations.name', 'LIKE', '%'.$search.'%');
@@ -441,7 +443,7 @@ class User extends SnipeModel implements AuthenticatableContract, CanResetPasswo
 
                  //Ugly, ugly code because Laravel sucks at self-joins
                 ->orWhere(function ($query) use ($search) {
-                    $query->whereRaw("users.manager_id IN (select id from users where first_name LIKE ? OR last_name LIKE ?)", ["%$search%", "%$search%"]);
+                    $query->whereRaw(DB::getTablePrefix()."users.manager_id IN (select id from ".DB::getTablePrefix()."users where first_name LIKE ? OR last_name LIKE ?)", ["%$search%", "%$search%"]);
                 });
 
 

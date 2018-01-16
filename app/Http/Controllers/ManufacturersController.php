@@ -35,6 +35,7 @@ class ManufacturersController extends Controller
      */
     public function index()
     {
+        $this->authorize('index', Manufacturer::class);
         return view('manufacturers/index', compact('manufacturers'));
     }
 
@@ -49,6 +50,7 @@ class ManufacturersController extends Controller
      */
     public function create()
     {
+        $this->authorize('create', Manufacturer::class);
         return view('manufacturers/edit')->with('item', new Manufacturer);
     }
 
@@ -65,6 +67,7 @@ class ManufacturersController extends Controller
     public function store(ImageUploadRequest $request)
     {
 
+        $this->authorize('edit', Manufacturer::class);
         $manufacturer = new Manufacturer;
         $manufacturer->name            = $request->input('name');
         $manufacturer->user_id          = Auth::user()->id;
@@ -104,6 +107,7 @@ class ManufacturersController extends Controller
      */
     public function edit($id = null)
     {
+        $this->authorize('edit', Manufacturer::class);
         // Check if the manufacturer exists
         if (is_null($item = Manufacturer::find($id))) {
             return redirect()->route('manufacturers.index')->with('error', trans('admin/manufacturers/message.does_not_exist'));
@@ -123,8 +127,9 @@ class ManufacturersController extends Controller
      * @return \Illuminate\Http\RedirectResponse
      * @since [v1.0]
      */
-    public function update(Request $request, $manufacturerId = null)
+    public function update(ImageUploadRequest $request, $manufacturerId = null)
     {
+        $this->authorize('edit', Manufacturer::class);
         // Check if the manufacturer exists
         if (is_null($manufacturer = Manufacturer::find($manufacturerId))) {
             // Redirect to the manufacturer  page
@@ -138,26 +143,35 @@ class ManufacturersController extends Controller
         $manufacturer->support_phone    = $request->input('support_phone');
         $manufacturer->support_email    = $request->input('support_email');
 
+        $old_image = $manufacturer->image;
+
+        // Set the model's image property to null if the image is being deleted
+        if ($request->input('image_delete') == 1) {
+            $manufacturer->image = null;
+        }
+
         if ($request->file('image')) {
             $image = $request->file('image');
-            $file_name = str_slug($image->getClientOriginalName()).".".$image->getClientOriginalExtension();
-            $path = public_path('uploads/manufacturers/'.$file_name);
-            $old_image = $path.$manufacturer->image;
+            $file_name = $manufacturer->id.'-'.str_slug($image->getClientOriginalName()) . "." . $image->getClientOriginalExtension();
 
+            if ($image->getClientOriginalExtension()!='svg') {
+                Image::make($image->getRealPath())->resize(500, null, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                })->save(app('manufacturers_upload_path').$file_name);
+            } else {
+                $image->move(app('manufacturers_upload_path'), $file_name);
+            }
+            $manufacturer->image = $file_name;
+
+        }
+
+        if ((($request->file('image')) && (isset($old_image)) && ($old_image!='')) || ($request->input('image_delete') == 1)) {
             try  {
-                unlink($old_image);
+                unlink(app('manufacturers_upload_path').$old_image);
             } catch (\Exception $e) {
                 \Log::error($e);
             }
-
-
-            Image::make($image->getRealPath())->resize(200, null, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            })->save($path);
-            $manufacturer->image = $file_name;
-        } elseif ($request->input('image_delete')=='1') {
-            $manufacturer->image = null;
         }
 
 
@@ -177,6 +191,7 @@ class ManufacturersController extends Controller
      */
     public function destroy($manufacturerId)
     {
+        $this->authorize('delete', Manufacturer::class);
         // Check if the manufacturer exists
         if (is_null($manufacturer = Manufacturer::find($manufacturerId))) {
             // Redirect to the manufacturers page
@@ -215,6 +230,7 @@ class ManufacturersController extends Controller
      */
     public function show($manufacturerId = null)
     {
+        $this->authorize('view', Manufacturer::class);
         $manufacturer = Manufacturer::find($manufacturerId);
 
         if (isset($manufacturer->id)) {

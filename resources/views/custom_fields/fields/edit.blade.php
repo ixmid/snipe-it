@@ -28,7 +28,6 @@
 
     <div class="box box-default">
       <div class="box-body">
-
           <!-- Name -->
           <div class="form-group {{ $errors->has('name') ? ' has-error' : '' }}">
             <label for="name" class="col-md-4 control-label">
@@ -71,7 +70,7 @@
               {{ trans('admin/custom_fields/general.field_format') }}
             </label>
             <div class="col-md-6 required">
-              {{ Form::select("format",\App\Helpers\Helper::predefined_formats(),"ANY", array('class'=>'format select2 form-control')) }}
+              {{ Form::select("format",\App\Helpers\Helper::predefined_formats(), $field->format, array('class'=>'format select2 form-control')) }}
               {!! $errors->first('format', '<span class="alert-msg"><i class="fa fa-times"></i> :message</span>') !!}
             </div>
           </div>
@@ -82,8 +81,12 @@
               {{ trans('admin/custom_fields/general.field_custom_format') }}
             </label>
             <div class="col-md-6 required">
-                {{ Form::text('custom_format', Input::old('custom_format', $field->custom_format), array('class' => 'form-control', 'id' => 'custom_format')) }}
+
+                {{ Form::text('custom_format', Input::old('custom_format', (($field->format!='') && (stripos($field->format,'regex')===0)) ? $field->format : ''), array('class' => 'form-control', 'id' => 'custom_format', 'placeholder'=>'regex:/^[0-9]{15}$/')) }}
+                <p class="help-block">{!! trans('admin/custom_fields/general.field_custom_format_help') !!}</p>
+
               {!! $errors->first('custom_format', '<span class="alert-msg"><i class="fa fa-times"></i> :message</span>') !!}
+
             </div>
           </div>
 
@@ -102,7 +105,7 @@
 
       @if (!$field->id)
           <!-- Encrypted  -->
-          <div class="form-group {{ $errors->has('custom_format') ? ' has-error' : '' }}">
+          <div class="form-group {{ $errors->has('encrypted') ? ' has-error' : '' }}">
             <div class="col-md-8 col-md-offset-4">
               <label for="field_encrypted">
                 <input type="checkbox" value="1" name="field_encrypted" id="field_encrypted" class="minimal"{{ (Input::old('field_encrypted') || $field->field_encrypted) ? ' checked="checked"' : '' }}>
@@ -136,6 +139,15 @@
 @section('moar_scripts')
 <script nonce="{{ csrf_token() }}">
     $(document).ready(function(){
+
+        // Initialize selected index of the format dropdown
+        // If the custom_regex is ever NOT the last element in the format
+        // listbox, we will need to refactor this.
+        if ($('#custom_format').val()!='') {
+            // console.log('value is ' + $('#custom_format').val());
+            $('.format').prop('selectedIndex', $('.format')[0].options.length - 1);
+        }
+
 
         // Only display the custom format field if it's a custom format validation type
         $(".format").change(function(){

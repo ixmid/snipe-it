@@ -220,7 +220,7 @@ class AssetsController extends Controller
 
             // Was the asset created?
         if ($asset->save()) {
-            $asset->logCreate();
+
 
             if (request('assigned_user')) {
                 $target = User::find(request('assigned_user'));
@@ -412,13 +412,6 @@ class AssetsController extends Controller
 
         $asset->delete();
 
-        $logaction = new Actionlog();
-        $logaction->item_type = Asset::class;
-        $logaction->item_id = $asset->id;
-        $logaction->created_at =  date("Y-m-d H:i:s");
-        $logaction->user_id = Auth::user()->id;
-        $logaction->logaction('deleted');
-
         return redirect()->route('hardware.index')->with('success', trans('admin/hardware/message.delete.success'));
     }
 
@@ -441,8 +434,13 @@ class AssetsController extends Controller
 
         $this->authorize('checkout', $asset);
 
+        if ($asset->availableForCheckout()) {
+            return view('hardware/checkout', compact('asset'));
+        }
+        return redirect()->route('hardware.index')->with('error', trans('admin/hardware/message.checkout.not_available'));
+
         // Get the dropdown of users and then pass it to the checkout view
-        return view('hardware/checkout', compact('asset'));
+
     }
 
     /**
@@ -463,16 +461,33 @@ class AssetsController extends Controller
             return redirect()->route('hardware.index')->with('error', trans('admin/hardware/message.checkout.not_available'));
         }
         $this->authorize('checkout', $asset);
-
-        if (request('assigned_user')) {
-            $target = User::find(request('assigned_user'));
-        } elseif (request('assigned_asset')) {
-            $target = Asset::where('id','!=',$assetId)->find(request('assigned_asset'));
-        } elseif (request('assigned_location')) {
-            $target = Location::find(request('assigned_location'));
-        }
-        // $user = User::find(Input::get('assigned_to'));
         $admin = Auth::user();
+
+
+        // This item is checked out to a location
+        if (request('checkout_to_type')=='location') {
+            $target = Location::find(request('assigned_location'));
+            $asset->location_id = ($target) ? $target->id : '';
+
+        } elseif (request('checkout_to_type')=='asset') {
+            $target = Asset::where('id','!=',$assetId)->find(request('assigned_asset'));
+            $asset->location_id = $target->rtd_location_id;
+            // Override with the asset's location_id if it has one
+            if ($target->location_id!='') {
+                $asset->location_id = ($target) ? $target->location_id : '';
+            }
+            
+        } elseif (request('checkout_to_type')=='user') {
+            // Fetch the target and set the asset's new location_id
+            $target = User::find(request('assigned_user'));
+            $asset->location_id = ($target) ? $target->location_id : '';
+        }
+
+        // No valid target was found - error out
+        if (!$target) {
+            return redirect()->back()->with('error', trans('admin/hardware/message.checkout.error'))->withErrors($asset->getErrors());
+        }
+
 
         if ((Input::has('checkout_at')) && (Input::get('checkout_at')!= date("Y-m-d"))) {
             $checkout_at = Input::get('checkout_at');
@@ -486,22 +501,12 @@ class AssetsController extends Controller
             $expected_checkin = '';
         }
 
-        // Set the location ID to the RTD location id if there is one
-        if ($asset->rtd_location_id!='') {
-            $asset->location_id = $target->rtd_location_id;
-        }
-
-        // Overwrite that if the target has a location ID though
-        if ($target->location_id!='') {
-            $asset->location_id = $target->location_id;
-        }
 
         if ($asset->checkOut($target, $admin, $checkout_at, $expected_checkin, e(Input::get('note')), Input::get('name'))) {
-//           Redirect to the new asset page
             return redirect()->route("hardware.index")->with('success', trans('admin/hardware/message.checkout.success'));
         }
 
-      // Redirect to the asset management page with error
+        // Redirect to the asset management page with error
         return redirect()->to("hardware/$assetId/checkout")->with('error', trans('admin/hardware/message.checkout.error'))->withErrors($asset->getErrors());
     }
 
@@ -667,20 +672,23 @@ class AssetsController extends Controller
 
         if ($settings->qr_code == '1') {
             $asset = Asset::withTrashed()->find($assetId);
-            $size = Helper::barcodeDimensions($settings->barcode_type);
-            $qr_file = public_path().'/uploads/barcodes/qr-'.str_slug($asset->asset_tag).'-'.str_slug($asset->id).'.png';
+            if ($asset) {
+                $size = Helper::barcodeDimensions($settings->barcode_type);
+                $qr_file = public_path().'/uploads/barcodes/qr-'.str_slug($asset->asset_tag).'-'.str_slug($asset->id).'.png';
 
-            if (isset($asset->id, $asset->asset_tag)) {
-                if (file_exists($qr_file)) {
-                    $header = ['Content-type' => 'image/png'];
-                    return response()->file($qr_file, $header);
-                } else {
-                    $barcode = new \Com\Tecnick\Barcode\Barcode();
-                    $barcode_obj =  $barcode->getBarcodeObj($settings->barcode_type, route('hardware.show', $asset->id), $size['height'], $size['width'], 'black', array(-2, -2, -2, -2));
-                    file_put_contents($qr_file, $barcode_obj->getPngData());
-                    return response($barcode_obj->getPngData())->header('Content-type', 'image/png');
+                if (isset($asset->id, $asset->asset_tag)) {
+                    if (file_exists($qr_file)) {
+                        $header = ['Content-type' => 'image/png'];
+                        return response()->file($qr_file, $header);
+                    } else {
+                        $barcode = new \Com\Tecnick\Barcode\Barcode();
+                        $barcode_obj =  $barcode->getBarcodeObj($settings->barcode_type, route('hardware.show', $asset->id), $size['height'], $size['width'], 'black', array(-2, -2, -2, -2));
+                        file_put_contents($qr_file, $barcode_obj->getPngData());
+                        return response($barcode_obj->getPngData())->header('Content-type', 'image/png');
+                    }
                 }
             }
+            return 'That asset is invalid';
         }
     }
 
@@ -914,6 +922,14 @@ class AssetsController extends Controller
         if (isset($asset->id)) {
             // Restore the asset
             Asset::withTrashed()->where('id', $assetId)->restore();
+
+            $logaction = new Actionlog();
+            $logaction->item_type = Asset::class;
+            $logaction->item_id = $asset->id;
+            $logaction->created_at =  date("Y-m-d H:i:s");
+            $logaction->user_id = Auth::user()->id;
+            $logaction->logaction('restored');
+
             return redirect()->route('hardware.index')->with('success', trans('admin/hardware/message.restore.success'));
         }
         return redirect()->route('hardware.index')->with('error', trans('admin/hardware/message.does_not_exist'));
@@ -940,8 +956,8 @@ class AssetsController extends Controller
 
         $destinationPath = config('app.private_uploads').'/assets';
 
-        if ($request->hasFile('image')) {
-            foreach ($request->file('image') as $file) {
+        if ($request->hasFile('assetfile')) {
+            foreach ($request->file('assetfile') as $file) {
                 $extension = $file->getClientOriginalExtension();
                 $filename = 'hardware-'.$asset->id.'-'.str_random(8);
                 $filename .= '-'.str_slug($file->getClientOriginalName()).'.'.$extension;
@@ -1079,70 +1095,73 @@ class AssetsController extends Controller
      * @internal param array $assets
      * @since [v2.0]
      */
-    public function postBulkSave()
+    public function postBulkSave(Request $request)
     {
         $this->authorize('update', Asset::class);
-        if (Input::has('ids')) {
-            $assets = Input::get('ids');
-            if ((Input::has('purchase_date'))
-                ||  (Input::has('purchase_cost'))
-                ||  (Input::has('supplier_id'))
-                ||  (Input::has('order_number'))
-                || (Input::has('warranty_months'))
-                || (Input::has('rtd_location_id'))
-                || (Input::has('requestable'))
-                ||  (Input::has('company_id'))
-                || (Input::has('status_id'))
-                ||  (Input::has('model_id'))
+        
+        \Log::debug($request->input('ids'));
+        
+        if (($request->has('ids')) && (count($request->input('ids') > 0))) {
+            $assets = $request->input('ids');
+            if (($request->has('purchase_date'))
+                ||  ($request->has('purchase_cost'))
+                ||  ($request->has('supplier_id'))
+                ||  ($request->has('order_number'))
+                || ($request->has('warranty_months'))
+                || ($request->has('rtd_location_id'))
+                || ($request->has('requestable'))
+                ||  ($request->has('company_id'))
+                || ($request->has('status_id'))
+                ||  ($request->has('model_id'))
             ) {
                 foreach ($assets as $key => $value) {
                     $update_array = array();
 
-                    if (Input::has('purchase_date')) {
-                        $update_array['purchase_date'] =  e(Input::get('purchase_date'));
+                    if ($request->has('purchase_date')) {
+                        $update_array['purchase_date'] =  $request->input('purchase_date');
                     }
-                    if (Input::has('purchase_cost')) {
-                        $update_array['purchase_cost'] =  Helper::ParseFloat(e(Input::get('purchase_cost')));
+                    if ($request->has('purchase_cost')) {
+                        $update_array['purchase_cost'] =  Helper::ParseFloat($request->input('purchase_cost'));
                     }
-                    if (Input::has('supplier_id')) {
-                        $update_array['supplier_id'] =  e(Input::get('supplier_id'));
+                    if ($request->has('supplier_id')) {
+                        $update_array['supplier_id'] =  $request->input('supplier_id');
                     }
-                    if (Input::has('model_id')) {
-                        $update_array['model_id'] =  e(Input::get('model_id'));
+                    if ($request->has('model_id')) {
+                        $update_array['model_id'] =  $request->input('model_id');
                     }
-                    if (Input::has('company_id')) {
-                        if (Input::get('company_id')=="clear") {
+                    if ($request->has('company_id')) {
+                        if ($request->input('company_id')=="clear") {
                             $update_array['company_id'] =  null;
                         } else {
-                            $update_array['company_id'] =  e(Input::get('company_id'));
+                            $update_array['company_id'] =  $request->input('company_id');
                         }
                     }
-                    if (Input::has('order_number')) {
-                        $update_array['order_number'] =  e(Input::get('order_number'));
+                    if ($request->has('order_number')) {
+                        $update_array['order_number'] =  $request->input('order_number');
                     }
-                    if (Input::has('warranty_months')) {
-                        $update_array['warranty_months'] =  e(Input::get('warranty_months'));
+                    if ($request->has('warranty_months')) {
+                        $update_array['warranty_months'] =  $request->input('warranty_months');
                     }
-                    if (Input::has('rtd_location_id')) {
-                        $update_array['rtd_location_id'] = e(Input::get('rtd_location_id'));
+                    if ($request->has('rtd_location_id')) {
+                        $update_array['rtd_location_id'] = $request->input('rtd_location_id');
                     }
-                    if (Input::has('status_id')) {
-                        $update_array['status_id'] = e(Input::get('status_id'));
+                    if ($request->has('status_id')) {
+                        $update_array['status_id'] = $request->input('status_id');
                     }
-                    if (Input::has('requestable')) {
-                        $update_array['requestable'] = e(Input::get('requestable'));
+                    if ($request->has('requestable')) {
+                        $update_array['requestable'] = $request->input('requestable');
                     }
 
                     DB::table('assets')
                         ->where('id', $key)
                         ->update($update_array);
                 } // endforeach
-                return redirect()->to("hardware")->with('success', trans('admin/hardware/message.update.success'));
+                return redirect()->route("hardware.index")->with('success', trans('admin/hardware/message.update.success'));
             // no values given, nothing to update
             }
-            return redirect()->to("hardware")->with('info', trans('admin/hardware/message.update.nothing_updated'));
+            return redirect()->route("hardware.index")->with('warning', trans('admin/hardware/message.update.nothing_updated'));
         } // endif
-        return redirect()->to("hardware");
+        return redirect()->route("hardware.index")->with('warning', trans('No assets selected, so nothing was updated.'));
     }
 
     /**
@@ -1243,11 +1262,13 @@ class AssetsController extends Controller
 
     public function audit($id)
     {
+        $settings = Setting::getSettings();
         $this->authorize('audit', Asset::class);
-        $dt = Carbon::now()->addMonths(12)->toDateString();
+        $dt = Carbon::now()->addMonths($settings->audit_interval)->toDateString();
         $asset = Asset::findOrFail($id);
         return view('hardware/audit')->with('asset', $asset)->with('next_audit_date', $dt)->with('locations_list');
     }
+
 
     public function auditStore(Request $request, $id)
     {
@@ -1264,7 +1285,11 @@ class AssetsController extends Controller
         }
 
         $asset = Asset::findOrFail($id);
+        // We don't want to log this as a normal update, so let's bypass that
+        $asset->unsetEventDispatcher();
+
         $asset->next_audit_date = $request->input('next_audit_date');
+        $asset->last_audit_date = date('Y-m-d h:i:s');
 
         if ($asset->save()) {
             $asset->logAudit(request('note'), request('location_id'));

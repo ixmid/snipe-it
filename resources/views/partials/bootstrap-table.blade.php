@@ -276,6 +276,14 @@
 
     }
 
+    // This just prints out the item type in the activity report
+    function itemTypeFormatter(value, row) {
+
+        if ((row) && (row.item) && (row.item.type)) {
+            return row.item.type;
+        }
+    }
+
 
     function genericCheckinCheckoutFormatter(destination) {
         return function (value,row) {
@@ -299,7 +307,7 @@
                 if (row.assigned_to) {
                     return '<nobr><a href="{{ url('/') }}/' + destination + '/' + row.id + '/checkin" class="btn btn-sm bg-purple" data-tooltip="true" title="Check this item in so it is available for re-imaging, re-issue, etc.">{{ trans('general.checkin') }}</a>';
                 } else if (row.assigned_pivot_id) {
-                    return '<nobr><a href="{{ url('/') }}/' + destination + '/' + row.assigned_pivot_id + '/checkin" class="btn btn-sm bg-purpley" data-tooltip="true" title="Check this item in so it is available for re-imaging, re-issue, etc.">{{ trans('general.checkin') }}</a>';
+                    return '<nobr><a href="{{ url('/') }}/' + destination + '/' + row.assigned_pivot_id + '/checkin" class="btn btn-sm bg-purple" data-tooltip="true" title="Check this item in so it is available for re-imaging, re-issue, etc.">{{ trans('general.checkin') }}</a>';
                 }
 
             } 
@@ -354,7 +362,17 @@
             // (for example, the locked icon for encrypted fields)
             var field_column_plain = field_column.replace(/<(?:.|\n)*?> ?/gm, '');
             if ((row.custom_fields) && (row.custom_fields[field_column_plain])) {
+
+                // If the field type needs special formatting, do that here
+                if ((row.custom_fields[field_column_plain].field_format) && (row.custom_fields[field_column_plain].value)) {
+                    if (row.custom_fields[field_column_plain].field_format=='URL') {
+                        return '<a href="' + row.custom_fields[field_column_plain].value + '" target="_blank" rel="noopener">' + row.custom_fields[field_column_plain].value + '</a>';
+                    } else if (row.custom_fields[field_column_plain].field_format=='EMAIL') {
+                        return '<a href="mailto:' + row.custom_fields[field_column_plain].value + '">' + row.custom_fields[field_column_plain].value + '</a>';
+                    }
+                }
                 return row.custom_fields[field_column_plain].value;
+
             }
 
     }
@@ -376,6 +394,19 @@
             return groups;
         }
     }
+
+
+
+    function changeLogFormatter(value) {
+        var result = '';
+            for (var index in value) {
+                result += index + ': <del>' + value[index].old + '</del>  <i class="fa fa-long-arrow-right" aria-hidden="true"></i> ' + value[index].new + '<br>'
+            }
+
+        return result;
+
+    }
+
 
     function deployedLocationFormatter(row, value) {
         if ((row) && (row!=undefined)) {
@@ -429,7 +460,7 @@
     }
 
     function assetCompanyObjFilterFormatter(value, row) {
-        if (row.company) {
+        if ((row) && (row.company)) {
             return '<a href="{{ url('/') }}/hardware/?company_id=' + row.company.id + '"> ' + row.company.name + '</a>';
         }
     }
@@ -444,7 +475,7 @@
 
     function employeeNumFormatter(value, row) {
 
-        if ((row.assigned_to) && ((row.assigned_to.employee_number))) {
+        if ((row) && (row.assigned_to) && ((row.assigned_to.employee_number))) {
             return '<a href="{{ url('/') }}/users/' + row.assigned_to.id + '"> ' + row.assigned_to.employee_number + '</a>';
         }
     }

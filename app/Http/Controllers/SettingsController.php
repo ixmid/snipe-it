@@ -552,6 +552,7 @@ class SettingsController extends Controller
         $setting->alert_threshold = $request->input('alert_threshold');
         $setting->audit_interval = $request->input('audit_interval');
         $setting->audit_warning_days = $request->input('audit_warning_days');
+        $setting->show_alerts_in_menu = $request->input('show_alerts_in_menu', '0');
 
         if ($setting->save()) {
             return redirect()->route('settings.index')
@@ -747,6 +748,7 @@ class SettingsController extends Controller
         $setting->labels_fontsize = $request->input('labels_fontsize');
         $setting->labels_pagewidth = $request->input('labels_pagewidth');
         $setting->labels_pageheight = $request->input('labels_pageheight');
+        $setting->labels_display_company_name = $request->input('labels_display_company_name', '0');
 
 
 

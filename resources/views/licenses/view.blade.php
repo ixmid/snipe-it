@@ -56,38 +56,48 @@
                         <td>Seat {{ $count }} </td>
                         <td>
                           @if (($licensedto->user) && ($licensedto->deleted_at == NULL))
+
                             @can('users.view')
                               <a href="{{ route('users.show', $licensedto->assigned_to) }}">
+                                <i class="fa fa-user"></i>
                                 {{ $licensedto->user->present()->fullName() }}
                               </a>
                             @else
+                              <i class="fa fa-user"></i>
                               {{ $licensedto->user->present()->fullName() }}
                             @endcan
+
                           @elseif (($licensedto->user) && ($licensedto->deleted_at != NULL))
+
                             <del>{{ $licensedto->user->present()->fullName() }}</del>
-                          @elseif ($licensedto->asset)
-                            @if ($licensedto->asset->assigned_to != 0)
-                              @can('users.view')
-                                {!!  $licensedto->asset->assignedTo->present()->nameUrl()  !!}
-                              @else
-                                {{ $licensedto->asset->assignedTo->present()->name() }}
-                              @endcan
-                            @endif
+
                           @endif
                         </td>
                         <td>
                           @if ($licensedto->asset)
+
                             @can('view', $licensedto->asset)
                               <a href="{{ route('hardware.show', $licensedto->asset_id) }}">
+                                <i class="fa fa-barcode"></i>
                                 {{ $licensedto->asset->name }} {{ $licensedto->asset->asset_tag }}
                               </a>
                             @else
+                              <i class="fa fa-barcode"></i>
                               {{ $licensedto->asset->name }} {{ $licensedto->asset->asset_tag }}
                             @endcan
+
+                              @if ($licensedto->asset->location)
+                                @can('locations.view')
+                                  ({!!  $licensedto->asset->location->present()->nameUrl()  !!})
+                                @else
+                                  ({{ $licensedto->asset->location->present()->name() }})
+                                @endcan
+                              @endif
+
                           @endif
                         </td>
                         <td>
-                          @can('checkout', $licensedto)
+                          @can('checkout', $license)
                             @if (($licensedto->assigned_to) || ($licensedto->asset_id))
                               @if ($license->reassignable)
                                 <a href="{{ route('licenses.checkin', $licensedto->id) }}" class="btn btn-sm bg-purple">
@@ -156,16 +166,21 @@
                       </tr>
                     @endif
 
-                    @can('viewKeys', $license)
+
                       @if (!is_null($license->serial))
                       <tr>
                         <td>{{ trans('admin/licenses/form.license_key') }}</td>
                         <td style="word-wrap: break-word;overflow-wrap: break-word;word-break: break-word;">
-                          {!! nl2br(e($license->serial)) !!}
+                          @can('viewKeys', $license)
+                            {!! nl2br(e($license->serial)) !!}
+                          @else
+                           ------------
+                          @endcan
+
                         </td>
                       </tr>
                       @endif
-                    @endcan
+
 
                     @if (!is_null($license->license_name))
                     <tr>

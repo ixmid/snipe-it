@@ -78,7 +78,7 @@ return [
     |
     */
 
-    'locale' =>  env('APP_LOCALE', 'en_US.UTF-8'),
+    'locale' =>  env('APP_LOCALE', 'en'),
 
     /*
     |--------------------------------------------------------------------------
@@ -121,7 +121,7 @@ return [
     |
     */
 
-    'log' => env('APP_LOG', 'daily'),
+    'log' => env('APP_LOG', 'single'),
 
     /*
     |--------------------------------------------------------------------------
@@ -278,7 +278,6 @@ return [
          */
 
         Barryvdh\Debugbar\ServiceProvider::class,
-        Aws\Laravel\AwsServiceProvider::class,
         Intervention\Image\ImageServiceProvider::class,
         Collective\Html\HtmlServiceProvider::class,
         Spatie\Backup\BackupServiceProvider::class,
@@ -297,6 +296,8 @@ return [
         App\Providers\AuthServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        App\Providers\SettingsServiceProvider::class,
+        App\Providers\ValidationServiceProvider::class,
 
 
         /*

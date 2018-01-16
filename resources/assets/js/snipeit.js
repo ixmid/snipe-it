@@ -194,7 +194,9 @@ $(document).ready(function () {
         link.select2({
 
             ajax: {
-                url: baseUrl + '/api/v1/' + endpoint + '/selectlist',
+
+                // the baseUrl includes a trailing slash
+                url: baseUrl + 'api/v1/' + endpoint + '/selectlist',
                 dataType: 'json',
                 delay: 250,
                 headers: {
@@ -239,9 +241,9 @@ $(document).ready(function () {
         var markup = "<div class='clearfix'>" ;
         markup +="<div class='pull-left' style='padding-right: 10px;'>";
         if (datalist.image) {
-            markup += "<img src='" + datalist.image + "' style='max-height: 20px'>";
+            markup += "<div style='width: 30px;'><img src='" + datalist.image + "' style='max-height: 20px; max-width: 30px;'></div>";
         } else {
-            markup += "<div style='height: 20px; width: 20px;'></div>";
+            markup += "<div style='height: 20px; width: 30px;'></div>";
         }
 
         markup += "</div><div>" + datalist.text + "</div>";
@@ -253,8 +255,40 @@ $(document).ready(function () {
         return datalist.text;
     }
 
+    // This handles the radio button selectors for the checkout-to-foo options
+    // on asset checkout and also on asset edit
+    $(function() {
+        $('input[name=checkout_to_type]').on("change",function () {
+            var assignto_type = $('input[name=checkout_to_type]:checked').val();
+            var userid = $('#assigned_user option:selected').val();
 
+            if (assignto_type == 'asset') {
+                $('#current_assets_box').fadeOut();
+                $('#assigned_asset').show();
+                $('#assigned_user').hide();
+                $('#assigned_location').hide();
+                $('.notification-callout').fadeOut();
 
+            } else if (assignto_type == 'location') {
+                $('#current_assets_box').fadeOut();
+                $('#assigned_asset').hide();
+                $('#assigned_user').hide();
+                $('#assigned_location').show();
+                $('.notification-callout').fadeOut();
+            } else  {
+
+                $('#assigned_asset').hide();
+                $('#assigned_user').show();
+                $('#assigned_location').hide();
+                if (userid) {
+                    $('#current_assets_box').fadeIn();
+                }
+                $('.notification-callout').fadeIn();
+
+            }
+        });
+    });
+    
 
 
 });

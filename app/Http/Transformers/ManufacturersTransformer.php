@@ -26,7 +26,7 @@ class ManufacturersTransformer
                 'id' => (int) $manufacturer->id,
                 'name' => e($manufacturer->name),
                 'url' => e($manufacturer->url),
-                'image' =>   ($manufacturer->image) ? e(url('/').'/uploads/manufacturers/'.e($manufacturer->image)) : null,
+                'image' =>   ($manufacturer->image) ? app('manufacturers_upload_url').e($manufacturer->image) : null,
                 'support_url' => e($manufacturer->support_url),
                 'support_phone' => e($manufacturer->support_phone),
                 'support_email' => e($manufacturer->support_email),
@@ -40,7 +40,7 @@ class ManufacturersTransformer
 
             $permissions_array['available_actions'] = [
                 'update' => Gate::allows('update', Manufacturer::class) ? true : false,
-                'delete' => Gate::allows('delete', Manufacturer::class) ? true : false,
+                'delete' => (Gate::allows('delete', Manufacturer::class) && ($manufacturer->assets_count == 0)  && ($manufacturer->licenses_count==0)  && ($manufacturer->consumables_count==0)  && ($manufacturer->accessories_count==0)  && ($manufacturer->deleted_at=='')) ? true : false,
             ];
 
             $array += $permissions_array;

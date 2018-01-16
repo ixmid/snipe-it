@@ -5,9 +5,31 @@ use App\Models\Company;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
+/**
+ * SnipePermissionsPolicy provides methods for handling the granular permissions used throughout Snipe-IT.
+ * Each "area" of a permission (which is usually a model, like Assets, Departments, etc), has a setting
+ * in config/permissions.php like view/create/edit/delete (and sometimes some extra stuff like
+ * checkout/checkin, etc.)
+ *
+ * A Policy should exist for each of these models, however if they only use the standard view/create/edit/delete,
+ * the policy can be pretty simple, for example with just one method setting the column name:
+ *
+ * protected function columnName()
+ * {
+ *    return 'manufacturers';
+ * }
+ *
+ */
+
 abstract class SnipePermissionsPolicy
 {
-    // This should return the key of the model in the users json permission string.
+    /**
+     * This should return the key of the model in the users json permission string.
+     *
+     * @return boolean
+     */
+
+    //
     abstract protected function columnName();
 
         use HandlesAuthorization;
@@ -26,7 +48,6 @@ abstract class SnipePermissionsPolicy
 
     public function index(User $user)
     {
-        // dd('here');
         return $user->hasAccess($this->columnName().'.view');
     }
     /**
@@ -37,7 +58,6 @@ abstract class SnipePermissionsPolicy
      */
     public function view(User $user, $item = null)
     {
-        //
         return $user->hasAccess($this->columnName().'.view');
     }
 
@@ -49,7 +69,6 @@ abstract class SnipePermissionsPolicy
      */
     public function create(User $user)
     {
-        //
         return $user->hasAccess($this->columnName().'.create');
     }
 
@@ -61,7 +80,6 @@ abstract class SnipePermissionsPolicy
      */
     public function update(User $user, $item = null)
     {
-        //
         return $user->hasAccess($this->columnName().'.edit');
     }
 
@@ -73,7 +91,6 @@ abstract class SnipePermissionsPolicy
      */
     public function delete(User $user, $item = null)
     {
-        //
         return $user->hasAccess($this->columnName().'.delete');
     }
 

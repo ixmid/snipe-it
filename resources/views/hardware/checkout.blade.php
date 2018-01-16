@@ -40,12 +40,13 @@
             <div class="form-group {{ $errors->has('name') ? 'error' : '' }}">
               {{ Form::label('name', trans('admin/hardware/form.name'), array('class' => 'col-md-3 control-label')) }}
               <div class="col-md-8">
-                <input class="form-control" type="text" name="name" id="name" value="{{ Input::old('name', $asset->name) }}" />
+                <input class="form-control" type="text" name="name" id="name" value="{{ Input::old('name', $asset->name) }}" tabindex="1">
                 {!! $errors->first('name', '<span class="alert-msg"><i class="fa fa-times"></i> :message</span>') !!}
               </div>
             </div>
+                @include ('partials.forms.checkout-selector', ['user_select' => 'true','asset_select' => 'true', 'location_select' => 'true'])
 
-                @include ('partials.forms.edit.user-select', ['translated_name' => trans('admin/hardware/form.checkout_to'), 'fieldname' => 'assigned_user'])
+                @include ('partials.forms.edit.user-select', ['translated_name' => trans('general.user'), 'fieldname' => 'assigned_user', 'required'=>'true'])
             @if ($asset->requireAcceptance())
                     <div class="form-group">
 
@@ -57,11 +58,10 @@
                         </div>
                     </div>
             @else
+                <!-- We have to pass unselect here so that we don't default to the asset that's being checked out. We want that asset to be pre-selected everywhere else. -->
+                @include ('partials.forms.edit.asset-select', ['translated_name' => trans('general.asset'), 'fieldname' => 'assigned_asset', 'unselect' => 'true', 'style' => 'display:none;', 'required'=>'true'])
 
-                @include ('partials.forms.edit.asset-select', ['translated_name' => trans('admin/hardware/form.checkout_to'), 'fieldname' => 'assigned_asset'])
-
-                @include ('partials.forms.edit.location-select', ['translated_name' => trans('admin/hardware/form.checkout_to'), 'fieldname' => 'assigned_location'])
-
+                @include ('partials.forms.edit.location-select', ['translated_name' => trans('general.location'), 'fieldname' => 'assigned_location', 'style' => 'display:none;', 'required'=>'true'])
 
             @endif
 
@@ -69,7 +69,7 @@
             <div class="form-group {{ $errors->has('checkout_at') ? 'error' : '' }}">
               {{ Form::label('name', trans('admin/hardware/form.checkout_date'), array('class' => 'col-md-3 control-label')) }}
               <div class="col-md-8">
-                  <div class="input-group date col-md-5" data-provide="datepicker" data-date-format="yyyy-mm-dd">
+                  <div class="input-group date col-md-5" data-provide="datepicker" data-date-format="yyyy-mm-dd" data-date-end-date="0d">
                       <input type="text" class="form-control" placeholder="{{ trans('general.select_date') }}" name="checkout_at" id="checkout_at" value="{{ Input::old('checkout_at') }}">
                       <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
                   </div>
@@ -81,7 +81,7 @@
             <div class="form-group {{ $errors->has('expected_checkin') ? 'error' : '' }}">
               {{ Form::label('name', trans('admin/hardware/form.expected_checkin'), array('class' => 'col-md-3 control-label')) }}
               <div class="col-md-8">
-                  <div class="input-group date col-md-5" data-provide="datepicker" data-date-format="yyyy-mm-dd">
+                  <div class="input-group date col-md-5" data-provide="datepicker" data-date-format="yyyy-mm-dd" data-date-start-date="0d">
                       <input type="text" class="form-control" placeholder="{{ trans('general.select_date') }}" name="expected_checkin" id="expected_checkin" value="{{ Input::old('expected_checkin') }}">
                       <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
                   </div>
@@ -99,7 +99,7 @@
             </div>
 
                 @if ($asset->requireAcceptance() || $asset->getEula())
-                    <div class="form-group">
+                    <div class="form-group notification-callout">
                         <div class="col-md-8 col-md-offset-3">
                             <div class="callout callout-info">
 
@@ -144,4 +144,15 @@
 
 @section('moar_scripts')
     @include('partials/assets-assigned')
+
+    <script>
+//        $('#checkout_at').datepicker({
+//            clearBtn: true,
+//            todayHighlight: true,
+//            endDate: '0d',
+//            format: 'yyyy-mm-dd'
+//        });
+
+
+    </script>
 @stop

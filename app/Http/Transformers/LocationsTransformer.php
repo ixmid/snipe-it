@@ -33,7 +33,7 @@ class LocationsTransformer
             $array = [
                 'id' => (int) $location->id,
                 'name' => e($location->name),
-                'image' =>   ($location->image) ? e(url('/').'/uploads/locations/'.e($location->image)) : null,
+                'image' =>   ($location->image) ? app('locations_upload_url').e($location->image) : null,
                 'address' => e($location->address),
                 'city' => e($location->city),
                 'state' => e($location->state),
@@ -57,7 +57,7 @@ class LocationsTransformer
 
             $permissions_array['available_actions'] = [
                 'update' => Gate::allows('update', Location::class) ? true : false,
-                'delete' => Gate::allows('delete', Location::class) ? true : false,
+                'delete' => (Gate::allows('delete', Department::class) && ($location->assigned_assets_count==0) && ($location->assets_count==0) && ($location->users_count==0) && ($location->deleted_at=='')) ? true : false,
             ];
 
             $array += $permissions_array;

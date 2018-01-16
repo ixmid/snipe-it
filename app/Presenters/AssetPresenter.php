@@ -148,6 +148,13 @@ class AssetPresenter extends Presenter
                 "title" => trans('general.order_number'),
                 'formatter' => "orderNumberObjFilterFormatter"
             ], [
+                "field" => "eol",
+                "searchable" => false,
+                "sortable" => false,
+                "visible" => false,
+                "title" => trans('general.eol'),
+                "formatter" => "dateDisplayFormatter"
+            ], [
                 "field" => "warranty_months",
                 "searchable" => true,
                 "sortable" => true,
@@ -193,6 +200,20 @@ class AssetPresenter extends Presenter
                 "sortable" => true,
                 "visible" => false,
                 "title" => trans('admin/hardware/form.expected_checkin'),
+                "formatter" => "dateDisplayFormatter"
+            ], [
+                "field" => "last_audit_date",
+                "searchable" => false,
+                "sortable" => true,
+                "visible" => false,
+                "title" => trans('general.last_audit'),
+                "formatter" => "dateDisplayFormatter"
+            ], [
+                "field" => "next_audit_date",
+                "searchable" => false,
+                "sortable" => true,
+                "visible" => false,
+                "title" => trans('general.next_audit_date'),
                 "formatter" => "dateDisplayFormatter"
             ],
         ];
@@ -289,10 +310,8 @@ class AssetPresenter extends Presenter
         $imagePath = '';
         if ($this->image && !empty($this->image)) {
             $imagePath = $this->image;
-            return 'poop';
         } elseif ($this->model && !empty($this->model->image)) {
             $imagePath = $this->model->image;
-            return 'fart';
         }
         if (!empty($imagePath)) {
             return config('app.url').'/uploads/assets/'.$imagePath;

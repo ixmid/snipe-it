@@ -52,7 +52,7 @@
             @endif
 
         @if ($snipeSettings->custom_css)
-            {{ $snipeSettings->show_custom_css() }}
+            {!! $snipeSettings->show_custom_css() !!}
         @endif
      @endif
     @media (max-width: 400px) {
@@ -218,14 +218,6 @@
                            </a>
                        </li>
                        @endcan
-                       @can('create', \App\Models\User::class)
-                       <li {!! (Request::is('users/create') ? 'class="active"' : '') !!}>
-                           <a href="{{ route('users.create') }}">
-                           <i class="fa fa-user fa-fw"></i>
-                           {{ trans('general.user') }}
-                           </a>
-                       </li>
-                       @endcan
                        @can('create', \App\Models\Component::class)
                        <li {!! (Request::is('components/create') ? 'class="active"' : '') !!}>
                            <a href="{{ route('components.create') }}">
@@ -234,11 +226,20 @@
                            </a>
                        </li>
                        @endcan
+                         @can('create', \App\Models\User::class)
+                             <li {!! (Request::is('users/create') ? 'class="active"' : '') !!}>
+                                 <a href="{{ route('users.create') }}">
+                                     <i class="fa fa-user fa-fw"></i>
+                                     {{ trans('general.user') }}
+                                 </a>
+                             </li>
+                         @endcan
                    </ul>
                 </li>
                @endcan
 
                @can('admin')
+               @if ($snipeSettings->show_alerts_in_menu=='1')
                <!-- Tasks: style can be found in dropdown.less -->
                <?php $alert_items = \App\Helpers\Helper::checkLowInventory(); ?>
 
@@ -281,6 +282,7 @@
                  </ul>
                </li>
                @endcan
+               @endif
 
 
                <!-- User Account: style can be found in dropdown.less -->
@@ -477,7 +479,7 @@
                 </a>
               </li>
               @endcan
-              @can('index', \App\Models\Consumable::class)
+              @can('view', \App\Models\Component::class)
             <li{!! (Request::is('consunmables*') ? ' class="active"' : '') !!}>
                 <a href="{{ url('consumables') }}">
                   <i class="fa fa-tint"></i>
@@ -511,7 +513,7 @@
             @endcan
 
             @can('backend.interact')
-                <li>
+                <li class="treeview">
                     <a href="#">
                         <i class="fa fa-gear"></i>
                         <span>{{ trans('general.settings') }}</span>
@@ -725,12 +727,12 @@
 
       <footer class="main-footer hidden-print">
         <div class="pull-right hidden-xs">
-          <b>Version</b> {{ config('version.app_version') }}  build {{ config('version.build_version') }} ({{ config('version.hash_version') }})
+          <b>Version</b> {{ config('version.app_version') }} - build {{ config('version.build_version') }} ({{ config('version.branch') }})
           <a target="_blank" class="btn btn-default btn-xs" href="https://snipe-it.readme.io/docs/overview" rel="noopener">User's Manual</a>
           <a target="_blank" class="btn btn-default btn-xs" href="https://snipeitapp.com/support/" rel="noopener">Report a Bug</a>
         </div>
         <a target="_blank" href="https://snipeitapp.com" rel="noopener">Snipe-IT</a> is an open source
-          project, made with <i class="fa fa-heart" style="color: #a94442; font-size: 10px"></i> by <a href="https://twitter.com/snipeyhead" rel="noopener">@snipeyhead</a> under the <a href="https://www.gnu.org/licenses/agpl-3.0.en.html" rel="noopener">AGPL3 license</a>.
+          project, made with <i class="fa fa-heart" style="color: #a94442; font-size: 10px"></i> by <a href="https://twitter.com/snipeitapp" rel="noopener">@snipeitapp</a> under the <a href="https://www.gnu.org/licenses/agpl-3.0.en.html" rel="noopener">AGPL3 license</a>.
       </footer>
 
 
@@ -771,6 +773,7 @@
     <script nonce="{{ csrf_token() }}">
         $(function () {
             $('[data-toggle="tooltip"]').tooltip();
+            $('.select2 span').addClass('needsclick');
 
             // This javascript handles saving the state of the menu (expanded or not)
             $('body').bind('expanded.pushMenu', function() {
@@ -797,6 +800,8 @@
             event.preventDefault();
             $(this).ekkoLightbox();
         });
+
+
 
     </script>
 

@@ -31,6 +31,7 @@ class AssetsTransformer
                 'name'=> e($asset->model->name)
             ] : null,
             'model_number' => (($asset->model) && ($asset->model->model_number)) ? e($asset->model->model_number) : null,
+            'eol' => ($asset->purchase_date!='') ? Helper::getFormattedDateObject($asset->present()->eol_date(), 'date') : null ,
             'status_label' => ($asset->assetstatus) ? [
                 'id' => (int) $asset->assetstatus->id,
                 'name'=> e($asset->present()->statusText),
@@ -68,6 +69,8 @@ class AssetsTransformer
             'warranty_expires' => ($asset->warranty_months > 0) ?  Helper::getFormattedDateObject($asset->warranty_expires, 'date') : null,
             'created_at' => Helper::getFormattedDateObject($asset->created_at, 'datetime'),
             'updated_at' => Helper::getFormattedDateObject($asset->updated_at, 'datetime'),
+            'last_audit_date' => Helper::getFormattedDateObject($asset->last_audit_date, 'datetime'),
+            'next_audit_date' => Helper::getFormattedDateObject($asset->next_audit_date, 'date'),
             'deleted_at' => Helper::getFormattedDateObject($asset->deleted_at, 'datetime'),
             'purchase_date' => Helper::getFormattedDateObject($asset->purchase_date, 'date'),
             'last_checkout' => Helper::getFormattedDateObject($asset->last_checkout, 'datetime'),
@@ -86,24 +89,21 @@ class AssetsTransformer
                     $decrypted = \App\Helpers\Helper::gracefulDecrypt($field,$asset->{$field->convertUnicodeDbSlug()});
                     $value = (Gate::allows('superadmin')) ? $decrypted : strtoupper(trans('admin/custom_fields/general.encrypted'));
 
- //                   $fields_array = [$field->convertUnicodeDbSlug() => $value];
-
-
                     $fields_array[$field->name] = [
                             'field' => $field->convertUnicodeDbSlug(),
-                            'value' => $value
+                            'value' => $value,
+                            'field_format' => $field->format,
                         ];
 
                 } else {
                     $fields_array[$field->name] = [
                         'field' => $field->convertUnicodeDbSlug(),
-                        'value' => $asset->{$field->convertUnicodeDbSlug()}
+                        'value' => $asset->{$field->convertUnicodeDbSlug()},
+                        'field_format' => $field->format,
                     ];
-                    //$fields_array = [$field->convertUnicodeDbSlug() => $asset->{$field->convertUnicodeDbSlug()}];
 
 
                 }
-                //array += $fields_array;
                 $array['custom_fields'] = $fields_array;
             }
         } else {
@@ -114,9 +114,22 @@ class AssetsTransformer
             'checkout' => (bool) Gate::allows('checkout', Asset::class),
             'checkin' => (bool) Gate::allows('checkin', Asset::class),
             'clone' => Gate::allows('create', Asset::class) ? true : false,
+            'restore' => false,
             'update' => (bool) Gate::allows('update', Asset::class),
             'delete' => (bool) Gate::allows('delete', Asset::class),
         ];
+
+        if ($asset->deleted_at!='') {
+            $permissions_array['available_actions'] = [
+                'checkout' => true,
+                'checkin' => false,
+                'clone' => Gate::allows('create', Asset::class) ? true : false,
+                'restore' => Gate::allows('create', Asset::class) ? true : false,
+                'update' => false,
+                'delete' => false,
+            ];
+        }
+
 
         $array += $permissions_array;
         return $array;
