@@ -80,7 +80,7 @@ class UsersController extends Controller
         }
 
         if ($request->has('department_id')) {
-            $users = $users->where('department_id','=',$request->input('department_id'));
+            $users = $users->where('users.department_id','=',$request->input('department_id'));
         }
 
         $order = $request->input('order') === 'asc' ? 'asc' : 'desc';
@@ -127,7 +127,6 @@ class UsersController extends Controller
      */
     public function selectlist(Request $request)
     {
-        $this->authorize('view', User::class);
 
         $users = User::select(
             [
@@ -224,6 +223,10 @@ class UsersController extends Controller
         $this->authorize('edit', User::class);
         $user = User::findOrFail($id);
         $user->fill($request->all());
+
+        if ($user->id == $request->input('manager_id')) {
+            return response()->json(Helper::formatStandardApiResponse('error', null, 'You cannot be your own manager'));
+        }
 
         if ($request->has('password')) {
             $user->password = bcrypt($request->input('password'));
