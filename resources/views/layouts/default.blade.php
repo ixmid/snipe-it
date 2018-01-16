@@ -6,7 +6,6 @@
     <title>
       @section('title')
       @show
-
       :: {{ $snipeSettings->site_name }}
     </title>
     <!-- Tell the browser to be responsive to screen width -->
@@ -29,6 +28,7 @@
 
     <script nonce="{{ csrf_token() }}">
       window.Laravel = { csrfToken: '{{ csrf_token() }}' };
+
     </script>
 
     <style nonce="{{ csrf_token() }}">
@@ -73,7 +73,7 @@
               }
           };
     </script>
-    <!-- Add laravel route sinto javascript  Primarily useful for vue.-->
+    <!-- Add laravel routes into javascript  Primarily useful for vue.-->
     @routes
       <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
       <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -89,7 +89,7 @@
        @endif
        <![endif]-->
   </head>
-  <body class="hold-transition skin-blue sidebar-mini sidebar-collapse">
+  <body class="sidebar-mini skin-blue {{ (session('menu_state')!='open') ? 'sidebar-mini sidebar-collapse' : ''  }}">
     <div class="wrapper">
 
       <header class="main-header">
@@ -108,7 +108,7 @@
                  @if ($snipeSettings->brand == '3')
                       <a class="logo navbar-brand no-hover" href="{{ url('/') }}">
                           @if ($snipeSettings->logo!='')
-                          <img class="navbar-brand-img" style="max-height: 50px;" src="{{ url('/') }}/uploads/{{ $snipeSettings->logo }}">
+                          <img class="navbar-brand-img" src="{{ url('/') }}/uploads/{{ $snipeSettings->logo }}">
                           @endif
                           {{ $snipeSettings->site_name }}
                       </a>
@@ -397,13 +397,12 @@
                         <a href="{{ route('hardware/bulkcheckout') }}">
                             {{ trans('general.bulk_checkout') }}</a>
                     </li>
+                    <li{!! (Request::is('hardware/requested') ? ' class="active>"' : '') !!}>
+                        <a href="{{ route('assets.requested') }}">
+                            {{ trans('general.requested') }}</a>
+                    </li>
                     @endcan
-                    @can('view', \App\Models\Assetmodel::class)
-                    <li{!! (Request::is('hardware/models*') ? ' class="active"' : '') !!}><a href="{{ route('models.index') }}">@lang('general.asset_models')</a></li>
-                    @endcan
-                    @can('view', \App\Models\Category::class)
-                  <li><a href="{{ url('categories') }}" {!! (Request::is('settings/categories*') ? ' class="active"' : '') !!} >@lang('general.categories')</a></li>
-                    @endcan
+
                     @can('create', \App\Models\Asset::class)
                       <li{!! (Request::query('Deleted') ? ' class="active"' : '') !!}><a href="{{ url('hardware?status=Deleted') }}">@lang('general.deleted')</a></li>
                       <li><a href="{{ route('maintenances.index') }}">@lang('general.asset_maintenances') </a></li>
@@ -464,7 +463,7 @@
                 </li>
             @endcan
 
-            @can('manage', \App\Models\Setting::class)
+            @can('backend.interact')
                 <li>
                     <a href="#">
                         <i class="fa fa-gear"></i>
@@ -536,7 +535,7 @@
                 </a>
 
                 <ul class="treeview-menu">
-	                 <li><a href="{{ route('reports.activity') }}" {{ (Request::is('reports/activity') ? ' class="active"' : '') }} >@lang('general.activity_report')</a></li>
+                    <li><a href="{{ route('reports.activity') }}" {{ (Request::is('reports/activity') ? ' class="active"' : '') }} >@lang('general.activity_report')</a></li>
 
                     <li><a href="{{ route('reports.audit') }}" {{ (Request::is('reports.audit') ? ' class="active"' : '') }} >@lang('general.audit_report')</a></li>
 
@@ -658,17 +657,6 @@
 
 
     <script src="{{ url(mix('js/dist/all.js')) }}" nonce="{{ csrf_token() }}"></script>
-    <script nonce="{{ csrf_token() }}">
-        $(function () {
-            var datepicker = $.fn.datepicker.noConflict(); // return $.fn.datepicker to previously assigned value
-            $.fn.bootstrapDP = datepicker;
-            $('.datepicker').datepicker();
-        })
-
-    </script>
-
-
-
 
     @section('moar_scripts')
     @show
@@ -676,11 +664,31 @@
     <script nonce="{{ csrf_token() }}">
         $(function () {
             $('[data-toggle="tooltip"]').tooltip();
-        })
+
+            $('body').bind('expanded.pushMenu', function() {
+                $.ajax({
+                    type: 'GET',
+                    url: "{{ route('account.menuprefs', ['state'=>'open']) }}",
+                    _token: "{{ csrf_token() }}"
+                });
+
+            });
+
+            $('body').bind('collapsed.pushMenu', function() {
+                $.ajax({
+                    type: 'GET',
+                    url: "{{ route('account.menuprefs', ['state'=>'close']) }}",
+                    _token: "{{ csrf_token() }}"
+                });
+            });
+
+        });
+
         $(document).on('click', '[data-toggle="lightbox"]', function(event) {
             event.preventDefault();
             $(this).ekkoLightbox();
         });
+
     </script>
 
     @if ((Session::get('topsearch')=='true') || (Request::is('/')))

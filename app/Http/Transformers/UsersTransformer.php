@@ -23,6 +23,7 @@ class UsersTransformer
     {
         $array = [
                 'id' => (int) $user->id,
+                'avatar' => e($user->present()->gravatar),
                 'name' => e($user->first_name).' '.($user->last_name),
                 'firstname' => e($user->first_name),
                 'lastname' => e($user->last_name),
@@ -34,6 +35,11 @@ class UsersTransformer
                 ]  : null,
                 'jobtitle' => ($user->jobtitle) ? e($user->jobtitle) : null,
                 'phone' => ($user->phone) ? e($user->phone) : null,
+                'address' => ($user->address) ? e($user->address) : null,
+                'city' => ($user->city) ? e($user->city) : null,
+                'state' => ($user->state) ? e($user->state) : null,
+                'country' => ($user->country) ? e($user->country) : null,
+                'zip' => ($user->zip) ? e($user->zip) : null,
                 'email' => e($user->email),
                 'department' => ($user->department) ? [
                     'id' => (int) $user->department->id,

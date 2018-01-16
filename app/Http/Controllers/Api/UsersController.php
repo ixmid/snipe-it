@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Helpers\Helper;
 use App\Http\Requests\SaveUserRequest;
 use App\Models\Asset;
+use App\Http\Transformers\AssetsTransformer;
+use App\Http\Transformers\SelectlistTransformer;
 
 class UsersController extends Controller
 {
@@ -32,6 +34,11 @@ class UsersController extends Controller
             'users.jobtitle',
             'users.email',
             'users.phone',
+            'users.address',
+            'users.city',
+            'users.state',
+            'users.country',
+            'users.zip',
             'users.username',
             'users.location_id',
             'users.manager_id',
@@ -43,8 +50,10 @@ class UsersController extends Controller
             'users.last_login',
             'users.deleted_at',
             'users.department_id',
-            'users.activated'
-        ])->with('manager', 'groups', 'userloc', 'company', 'department','throttle','assets','licenses','accessories','consumables')
+            'users.activated',
+            'users.avatar',
+
+        ])->with('manager', 'groups', 'location', 'company', 'department','throttle','assets','licenses','accessories','consumables')
             ->withCount('assets','licenses','accessories','consumables');
         $users = Company::scopeCompanyables($users);
 
@@ -67,7 +76,7 @@ class UsersController extends Controller
         }
         
         if ($request->has('group_id')) {
-            $users = $users->ByGroup($request->has('group_id'));
+            $users = $users->ByGroup($request->get('group_id'));
         }
 
         if ($request->has('department_id')) {
@@ -94,7 +103,8 @@ class UsersController extends Controller
                         'last_name','first_name','email','jobtitle','username','employee_num',
                         'assets','accessories', 'consumables','licenses','groups','activated','created_at',
                         'two_factor_enrolled','two_factor_optin','last_login', 'assets_count', 'licenses_count',
-                        'consumables_count', 'accessories_count', 'phone'
+                        'consumables_count', 'accessories_count', 'phone', 'address', 'city', 'state',
+                        'country', 'zip'
                     ];
 
                 $sort = in_array($request->get('sort'), $allowed_columns) ? $request->get('sort') : 'first_name';
@@ -105,6 +115,63 @@ class UsersController extends Controller
         $users = $users->skip($offset)->take($limit)->get();
         return (new UsersTransformer)->transformUsers($users, $total);
     }
+
+
+    /**
+     * Gets a paginated collection for the select2 menus
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v4.0.16]
+     * @see \App\Http\Transformers\SelectlistTransformer
+     *
+     */
+    public function selectlist(Request $request)
+    {
+        $this->authorize('view', User::class);
+
+        $users = User::select(
+            [
+                'users.id',
+                'users.employee_num',
+                'users.first_name',
+                'users.last_name',
+                'users.gravatar',
+                'users.avatar',
+                'users.email',
+            ]
+            );
+
+        $users = Company::scopeCompanyables($users);
+
+        if ($request->has('search')) {
+            $users = $users->where('first_name', 'LIKE', '%'.$request->get('search').'%')
+                ->orWhere('last_name', 'LIKE', '%'.$request->get('search').'%')
+                ->orWhere('username', 'LIKE', '%'.$request->get('search').'%')
+                ->orWhere('employee_num', 'LIKE', '%'.$request->get('search').'%');
+        }
+
+        $users = $users->orderBy('last_name', 'asc')->orderBy('first_name', 'asc');
+        $users = $users->paginate(50);
+
+        foreach ($users as $user) {
+            $name_str = '';
+            if ($user->last_name!='') {
+                $name_str .= e($user->last_name).', ';
+            }
+            $name_str .= e($user->first_name);
+
+            if ($user->employee_num!='') {
+                $name_str .= ' (#'.e($user->employee_num).')';
+            }
+
+            $user->use_text = $name_str;
+            $user->use_image = ($user->present()->gravatar) ? $user->present()->gravatar : null;
+        }
+
+        return (new SelectlistTransformer)->transformSelectlist($users);
+
+    }
+
 
 
     /**
@@ -123,7 +190,7 @@ class UsersController extends Controller
         $user->password = bcrypt($request->input('password'));
 
         if ($user->save()) {
-            return response()->json(Helper::formatStandardApiResponse('success', (new UsersTransformer)->transformUser($user), trans('admin/users/message.create.success')));
+            return response()->json(Helper::formatStandardApiResponse('success', (new UsersTransformer)->transformUser($user), trans('admin/users/message.success.create')));
         }
         return response()->json(Helper::formatStandardApiResponse('error', null, $user->getErrors()));
     }
@@ -162,6 +229,9 @@ class UsersController extends Controller
             $user->password = bcrypt($request->input('password'));
         }
 
+        // Update the location of any assets checked out to this user
+        Asset::where('assigned_type', User::class)
+            ->where('assigned_to', $user->id)->update(['location_id' => $request->input('location_id', null)]);
 
         if ($user->save()) {
             return response()->json(Helper::formatStandardApiResponse('success', (new UsersTransformer)->transformUser($user), trans('admin/users/message.success.update')));
@@ -207,6 +277,6 @@ class UsersController extends Controller
     {
         $this->authorize('view', User::class);
         $assets = Asset::where('assigned_to', '=', $id)->with('model')->get();
-        return response()->json($assets);
+        return (new AssetsTransformer)->transformAssets($assets, $assets->count());
     }
 }

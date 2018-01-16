@@ -30,6 +30,8 @@ class AssetImporter extends ItemImporter
                 if ($customFieldValue) {
                     $this->item['custom_fields'][$customField->db_column_name()] = $customFieldValue;
                     $this->log('Custom Field '. $customField->name.': '.$customFieldValue);
+                } else {
+                    $this->item['custom_fields'][$customField->db_column_name()] = '';
                 }
             }
         }
@@ -65,7 +67,7 @@ class AssetImporter extends ItemImporter
         }
 
         $this->item['image'] = $this->findCsvMatch($row, "image");
-        $this->item['warranty_months'] = intval($this->findCsvMatch($row, "warranty"));
+        $this->item['warranty_months'] = intval($this->findCsvMatch($row, "warranty_months"));
         $this->item['model_id'] = $this->createOrFetchAssetModel($row);
 
         // If no status ID is found

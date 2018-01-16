@@ -35,6 +35,15 @@ class UserPresenter extends Presenter
                 "visible" => false
             ],
             [
+                "field" => "avatar",
+                "searchable" => false,
+                "sortable" => false,
+                "switchable" => true,
+                "title" => 'Avatar',
+                "visible" => false,
+                "formatter" => "imageFormatter"
+            ],
+            [
                 "field" => "company",
                 "searchable" => true,
                 "sortable" => true,
@@ -76,6 +85,46 @@ class UserPresenter extends Presenter
                 "switchable" => true,
                 "title" => trans('admin/users/table.phone'),
                 "visible" => true,
+            ],
+            [
+                "field" => "address",
+                "searchable" => true,
+                "sortable" => true,
+                "switchable" => true,
+                "title" => trans('general.address'),
+                "visible" => false,
+            ],
+            [
+                "field" => "city",
+                "searchable" => true,
+                "sortable" => true,
+                "switchable" => true,
+                "title" => trans('general.city'),
+                "visible" => false,
+            ],
+            [
+                "field" => "state",
+                "searchable" => true,
+                "sortable" => true,
+                "switchable" => true,
+                "title" => trans('general.state'),
+                "visible" => false,
+            ],
+            [
+                "field" => "country",
+                "searchable" => true,
+                "sortable" => true,
+                "switchable" => true,
+                "title" => trans('general.country'),
+                "visible" => false,
+            ],
+            [
+                "field" => "zip",
+                "searchable" => true,
+                "sortable" => true,
+                "switchable" => true,
+                "title" => trans('general.zip'),
+                "visible" => false,
             ],
             [
                 "field" => "username",
@@ -278,7 +327,8 @@ class UserPresenter extends Presenter
             return "//gravatar.com/avatar/".$gravatar;
         }
 
-        return false;
+        // Set a fun, gender-neutral default icon
+        return url('/').'/img/default-sm.png';
 
     }
 

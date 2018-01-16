@@ -190,8 +190,6 @@ Route::group([ 'prefix' => 'admin','middleware' => ['authorize:superuser']], fun
     });
 
 
-    Route::get('requests', [ 'as' => 'requests', 'middleware' => 'authorize:admin', 'uses' => 'ViewAssetsController@getRequestedIndex']);
-
 
     Route::resource('groups', 'GroupsController', [
         'middleware' => ['auth'],
@@ -235,6 +233,8 @@ Route::group([ 'prefix' => 'account', 'middleware' => ['auth']], function () {
     # Profile
     Route::get('profile', [ 'as' => 'profile', 'uses' => 'ProfileController@getIndex' ]);
     Route::post('profile', 'ProfileController@postIndex');
+
+    Route::get('menu', [ 'as' => 'account.menuprefs', 'uses' => 'ProfileController@getMenuState' ]);
 
     Route::get('password', [ 'as' => 'account.password.index', 'uses' => 'ProfileController@password' ]);
     Route::post('password', [ 'uses' => 'ProfileController@passwordSave' ]);

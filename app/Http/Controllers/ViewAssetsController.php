@@ -68,17 +68,12 @@ class ViewAssetsController extends Controller
     public function getRequestableIndex()
     {
 
-        $assets = Asset::with('model', 'defaultLoc', 'assetloc', 'assignedTo', 'requests')->Hardware()->RequestableAssets()->get();
+        $assets = Asset::with('model', 'defaultLoc', 'location', 'assignedTo', 'requests')->Hardware()->RequestableAssets()->get();
         $models = AssetModel::with('category', 'requests', 'assets')->RequestableModels()->get();
 
         return view('account/requestable-assets', compact('user', 'assets', 'models'));
     }
 
-    public function getRequestedIndex()
-    {
-        $requestedItems = CheckoutRequest::with('user', 'requestedItem')->get();
-        return view('admin/requested-assets', compact('requestedItems'));
-    }
 
 
     public function getRequestItem($itemType, $itemId = null)

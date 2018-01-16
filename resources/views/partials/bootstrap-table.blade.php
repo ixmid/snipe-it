@@ -11,10 +11,28 @@
 <script src="{{ asset('js/jspdf.plugin.autotable.js') }}"></script>
 <script src="{{ asset('js/extensions/export/jquery.base64.js') }}"></script>
 <script src="{{ asset('js/extensions/toolbar/bootstrap-table-toolbar.js') }}"></script>
+<script src="{{ asset('js/extensions/sticky-header/bootstrap-table-sticky-header.js') }}"></script>
 @endif
 
 <script nonce="{{ csrf_token() }}">
-$('.snipe-table').bootstrapTable({
+
+    var $table = $('.snipe-table');
+    $(function () {
+        buildTable($table, 20, 50);
+    });
+    function buildTable($el) {
+        var stickyHeaderOffsetY = 0;
+
+        if ( $('.navbar-fixed-top').css('height') ) {
+            stickyHeaderOffsetY = +$('.navbar-fixed-top').css('height').replace('px','');
+        }
+        if ( $('.navbar-fixed-top').css('margin-bottom') ) {
+            stickyHeaderOffsetY += +$('.navbar-fixed-top').css('margin-bottom').replace('px','');
+        }
+
+
+
+$('.snipe-table').bootstrapTable('destroy').bootstrapTable({
         classes: 'table table-responsive table-no-bordered',
         undefinedText: '',
         iconsPrefix: 'fa',
@@ -25,7 +43,7 @@ $('.snipe-table').bootstrapTable({
 
 
         paginationVAlign: 'both',
-        sidePagination: 'server',
+        sidePagination: '{{ (isset($clientSearch)) ? 'client' : 'server' }}',
         sortable: true,
 
 
@@ -38,6 +56,11 @@ $('.snipe-table').bootstrapTable({
         cookie: true,
         cookieExpire: '2y',
         showExport: true,
+
+    stickyHeader: true,
+    stickyHeaderOffsetY: stickyHeaderOffsetY + 'px',
+
+
         @if (isset($showFooter))
             showFooter: true,
         @endif
@@ -86,7 +109,7 @@ $('.snipe-table').bootstrapTable({
         formatLoadingMessage: function () {
             return '<h4><i class="fa fa-spinner fa-spin" aria-hidden="true"></i> Loading... please wait.... </h4>';
         },
-        pageList: ['30','50','100','150','200','500','1000'],
+        pageList: ['30','50','100','150','200','500'],
         icons: {
             advancedSearchIcon: 'fa fa-search-plus',
             paginationSwitchDown: 'fa-caret-square-o-down',
@@ -101,6 +124,8 @@ $('.snipe-table').bootstrapTable({
         },
 
     });
+    }
+
 
 
     function dateRowCheckStyle(value) {
@@ -166,9 +191,9 @@ $('.snipe-table').bootstrapTable({
                         icon_style = 'fa-times';
                 }
 
-                return '<a href="{{ url('/') }}/' + destination + '/' + value.id + '" data-tooltip="true" title="'+ value.status_meta + '"> <i class="fa ' + icon_style + ' text-' + text_color + '"></i> ' + value.name + '</a> ';
+                return '<nobr><a href="{{ url('/') }}/' + destination + '/' + value.id + '" data-tooltip="true" title="'+ value.status_meta + '"> <i class="fa ' + icon_style + ' text-' + text_color + '"></i> ' + value.name + '</a></nobr>';
             } else if ((value) && (value.name)) {
-                return '<a href="{{ url('/') }}/' + destination + '/' + value.id + '"> ' + value.name + '</a>';
+                return '<nobr><a href="{{ url('/') }}/' + destination + '/' + value.id + '"> ' + value.name + '</a></span>';
             }
         };
     }
@@ -245,7 +270,7 @@ $('.snipe-table').bootstrapTable({
                 item_icon = 'fa-map-marker';
             }
 
-            return '<a href="{{ url('/') }}/' + item_destination +'/' + value.id + '" data-tooltip="true" title="' + value.type + '"><i class="fa ' + item_icon + ' text-blue"></i> ' + value.name + '</a>';
+            return '<nobr><a href="{{ url('/') }}/' + item_destination +'/' + value.id + '" data-tooltip="true" title="' + value.type + '"><i class="fa ' + item_icon + ' text-blue"></i> ' + value.name + '</a></nobr>';
 
         } else {
             return '';
