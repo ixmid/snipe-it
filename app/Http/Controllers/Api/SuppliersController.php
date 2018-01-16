@@ -20,11 +20,11 @@ class SuppliersController extends Controller
     public function index(Request $request)
     {
         $this->authorize('view', Supplier::class);
-        $allowed_columns = ['id','name','address','phone','contact','fax','email'];
+        $allowed_columns = ['id','name','address','phone','contact','fax','email','image','assets_count','licenses_count', 'accessories_count'];
         
         $suppliers = Supplier::select(
                 array('id','name','address','address2','city','state','country','fax', 'phone','email','contact','created_at','updated_at','deleted_at')
-            )->withCount('assets')->withCount('licenses')->whereNull('deleted_at');
+            )->withCount('assets')->withCount('licenses')->withCount('accessories')->whereNull('deleted_at');
 
 
         if ($request->has('search')) {
@@ -113,8 +113,22 @@ class SuppliersController extends Controller
     public function destroy($id)
     {
         $this->authorize('delete', Supplier::class);
-        $supplier = Supplier::findOrFail($id);
+        $supplier = Supplier::with('asset_maintenances', 'assets', 'licenses')->withCount('asset_maintenances','assets', 'licenses')->findOrFail($id);
         $this->authorize('delete', $supplier);
+
+
+        if ($supplier->assets_count > 0) {
+            return response()->json(Helper::formatStandardApiResponse('error', null,  trans('admin/suppliers/message.delete.assoc_assets', ['asset_count' => (int) $supplier->assets_count])));
+        }
+
+        if ($supplier->asset_maintenances_count > 0) {
+            return response()->json(Helper::formatStandardApiResponse('error', null,  trans('admin/suppliers/message.delete.assoc_maintenances', ['asset_maintenances_count' => $supplier->asset_maintenances_count])));
+        }
+
+        if ($supplier->licenses_count > 0) {
+            return response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/suppliers/message.delete.assoc_licenses', ['licenses_count' => (int) $supplier->licenses_count])));
+        }
+
         $supplier->delete();
         return response()->json(Helper::formatStandardApiResponse('success', null,  trans('admin/suppliers/message.delete.success')));
 

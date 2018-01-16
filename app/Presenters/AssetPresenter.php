@@ -112,7 +112,7 @@ class AssetPresenter extends Presenter
                 "sortable" => true,
                 "title" => trans('admin/hardware/table.location'),
                 "visible" => true,
-                "formatter" => "locationsLinkObjFormatter"
+                "formatter" => "deployedLocationFormatter"
             ],  [
                 "field" => "manufacturer",
                 "searchable" => true,
@@ -139,6 +139,7 @@ class AssetPresenter extends Presenter
                 "searchable" => true,
                 "sortable" => true,
                 "title" => trans('general.purchase_cost'),
+                "footerFormatter" => 'sumFormatter',
             ], [
                 "field" => "order_number",
                 "searchable" => true,

@@ -16,7 +16,8 @@ class RecryptFromMcrypt extends Command
      *
      * @var string
      */
-    protected $signature = 'snipeit:legacy-recrypt';
+    protected $signature = 'snipeit:legacy-recrypt 
+                {--force : Force a re-crypt of encrypted data from MCRYPT.}';
 
     /**
      * The console command description.
@@ -48,6 +49,7 @@ class RecryptFromMcrypt extends Command
         // If not, we can try to use the current APP_KEY if looks like it's old
         $legacy_key = env('LEGACY_APP_KEY');
         $key_parts = explode(':', $legacy_key);
+        $legacy_cipher = env('LEGACY_CIPHER');
         $errors = array();
 
         if (!$legacy_key) {
@@ -60,6 +62,7 @@ class RecryptFromMcrypt extends Command
         if (strlen($legacy_key) == 32) {
             $legacy_length_check = true;
         } elseif (array_key_exists('1', $key_parts) && (strlen($key_parts[1])==44)) {
+            $legacy_key = base64_decode($key_parts[1],true);
             $legacy_length_check = true;
         } else {
             $legacy_length_check = false;
@@ -79,7 +82,9 @@ class RecryptFromMcrypt extends Command
         $this->error('================================!!!! WARNING !!!!================================');
         $this->comment("This tool will attempt to decrypt your old Snipe-IT (mcrypt, now deprecated) encrypted data and re-encrypt it using OpenSSL. \n\nYou should only continue if you have backed up any and all old APP_KEYs and have backed up your data.");
 
-        if ($this->confirm("Are you SURE you wish to continue?")) {
+        $force = ($this->option('force')) ? true : false;
+
+        if ($force || ($this->confirm("Are you SURE you wish to continue?"))) {
 
             $backup_file = 'backups/env-backups/'.'app_key-'.date('Y-m-d-gis');
 
@@ -91,13 +96,21 @@ class RecryptFromMcrypt extends Command
             }
 
 
-            $mcrypter = new McryptEncrypter($legacy_key);
+            if ($legacy_cipher){
+                $mcrypter = new McryptEncrypter($legacy_key,$legacy_cipher);
+            }else{
+                $mcrypter = new McryptEncrypter($legacy_key);
+            }
             $settings = Setting::getSettings();
 
-            if ($settings->ldap_password=='') {
+            if ($settings->ldap_pword=='') {
                 $this->comment('INFO: No LDAP password found. Skipping... ');
+            } else {
+                $decrypted_ldap_pword = $mcrypter->decrypt($settings->ldap_pword);
+                $settings->ldap_pword = \Crypt::encrypt($decrypted_ldap_pword);
+                $settings->save();
             }
-
+            /** @var CustomField[] $custom_fields */
             $custom_fields = CustomField::where('field_encrypted','=', 1)->get();
             $this->comment('INFO: Retrieving encrypted custom fields...');
 
@@ -110,32 +123,22 @@ class RecryptFromMcrypt extends Command
 
 
             // Get all assets with a value in any of the fields that were encrypted
+            /** @var Asset[] $assets */
             $assets = $query->get();
 
             $bar = $this->output->createProgressBar(count($assets));
 
-            foreach ($custom_fields as $encrypted_field) {
-
-                // Try to decrypt the payload using the legacy app key
-                try {
-                    $decrypted_field = $mcrypter->decrypt($encrypted_field);
-                    $this->comment($decrypted_field);
-                } catch (\Exception $e) {
-                    $errors[] = ' - ERROR: Could not decrypt field ['.$encrypted_field->name.']: '.$e->getMessage();
-                }
-                $bar->advance();
-            }
-
 
             foreach ($assets as $asset) {
                 foreach ($custom_fields as $encrypted_field) {
+                    $columnName = $encrypted_field->db_column;
 
                     // Make sure the value isn't null
-                    if ($asset->{$encrypted_field}!='') {
+                    if ($asset->{$columnName}!='') {
                         // Try to decrypt the payload using the legacy app key
                         try {
-                            $decrypted_field = $mcrypter->decrypt($asset->{$encrypted_field});
-                            $asset->{$encrypted_field} = \Crypt::encrypt($decrypted_field);
+                            $decrypted_field = $mcrypter->decrypt($asset->{$columnName});
+                            $asset->{$columnName} = \Crypt::encrypt($decrypted_field);
                             $this->comment($decrypted_field);
                         } catch (\Exception $e) {
                             $errors[] = ' - ERROR: Could not decrypt field ['.$encrypted_field->name.']: '.$e->getMessage();

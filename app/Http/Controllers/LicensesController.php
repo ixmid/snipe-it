@@ -187,6 +187,7 @@ class LicensesController extends Controller
         $license->termination_date  = $request->input('termination_date');
         $license->seats             = e($request->input('seats'));
         $license->manufacturer_id   =  $request->input('manufacturer_id');
+        $license->supplier_id       = $request->input('supplier_id');
 
         if ($license->save()) {
             return redirect()->route('licenses.show', ['license' => $licenseId])->with('success', trans('admin/licenses/message.update.success'));
@@ -440,17 +441,15 @@ class LicensesController extends Controller
     public function show($licenseId = null)
     {
 
-        $license = License::find($licenseId);
-        $license = $license->load('assignedusers', 'licenseSeats.user', 'licenseSeats.asset');
+        $license = License::with('assignedusers', 'licenseSeats.user', 'licenseSeats.asset')->find($licenseId);
 
-        if (isset($license->id)) {
-            $license = $license->load('assignedusers', 'licenseSeats.user', 'licenseSeats.asset');
+        if ($license) {
             $this->authorize('view', $license);
             return view('licenses/view', compact('license'));
         }
-        $error = trans('admin/licenses/message.does_not_exist', compact('id'));
-        return redirect()->route('licenses.index')->with('error', $error);
+        return redirect()->route('licenses.index')->with('error', trans('admin/licenses/message.does_not_exist', compact('id')));
     }
+    
 
     public function getClone($licenseId = null)
     {

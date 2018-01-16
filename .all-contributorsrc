@@ -782,6 +782,24 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "TonisOrmisson",
+      "name": "Tõnis Ormisson",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/6357451?v=4",
+      "profile": "http://andmemasin.eu",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "thakilla",
+      "name": "Nicolai Essig",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/449411?v=4",
+      "profile": "http://www.nicolai-essig.de",
+      "contributions": [
+        "code"
+      ]
     }
   ]
 }

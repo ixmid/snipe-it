@@ -38,6 +38,9 @@ $('.snipe-table').bootstrapTable({
         cookie: true,
         cookieExpire: '2y',
         showExport: true,
+        @if (isset($showFooter))
+            showFooter: true,
+        @endif
         showColumns: true,
         trimOnSearch: false,
 
@@ -176,33 +179,42 @@ $('.snipe-table').bootstrapTable({
 
             var actions = '<nobr>';
 
+            var dest = destination;
+            if (destination=='groups') {
+                var dest = 'admin/groups';
+            }
+
             if ((row.available_actions) && (row.available_actions.clone === true)) {
-                actions += '<a href="{{ url('/') }}/' + destination + '/' + row.id + '/clone" class="btn btn-sm btn-info" data-tooltip="true" title="Clone"><i class="fa fa-copy"></i></a>&nbsp;';
+                actions += '<a href="{{ url('/') }}/' + dest + '/' + row.id + '/clone" class="btn btn-sm btn-info" data-tooltip="true" title="Clone"><i class="fa fa-copy"></i></a>&nbsp;';
             }
 
             if ((row.available_actions) && (row.available_actions.update === true)) {
-                actions += '<a href="{{ url('/') }}/' + destination + '/' + row.id + '/edit" class="btn btn-sm btn-warning" data-tooltip="true" title="Update"><i class="fa fa-pencil"></i></a>&nbsp;';
+                actions += '<a href="{{ url('/') }}/' + dest + '/' + row.id + '/edit" class="btn btn-sm btn-warning" data-tooltip="true" title="Update"><i class="fa fa-pencil"></i></a>&nbsp;';
             }
 
             if ((row.available_actions) && (row.available_actions.delete === true)) {
-                actions += '<a href="{{ url('/') }}/' + destination + '/' + row.id + '" '
+                actions += '<a href="{{ url('/') }}/' + dest + '/' + row.id + '" '
                     + ' class="btn btn-danger btn-sm delete-asset"  data-tooltip="true"  '
                     + ' data-toggle="modal" '
                     + ' data-content="{{ trans('general.sure_to_delete') }} ' + row.name + '?" '
                     + ' data-title="{{  trans('general.delete') }}" onClick="return false;">'
-                    + '<i class="fa fa-trash"></i></a></nobr>';
+                    + '<i class="fa fa-trash"></i></a>&nbsp;';
+            } else {
+                actions += '<a class="btn btn-danger btn-sm delete-asset disabled" onClick="return false;"><i class="fa fa-trash"></i></a>&nbsp;';
             }
 
             if ((row.available_actions) && (row.available_actions.restore === true)) {
-                actions += '<a href="{{ url('/') }}/' + destination + '/' + row.id + '/restore" class="btn btn-sm btn-warning" data-tooltip="true" title="Restore"><i class="fa fa-retweet"></i></a>&nbsp;';
+                actions += '<a href="{{ url('/') }}/' + dest + '/' + row.id + '/restore" class="btn btn-sm btn-warning" data-tooltip="true" title="Restore"><i class="fa fa-retweet"></i></a>&nbsp;';
             }
+
+            actions +='</nobr>';
             return actions;
 
         };
     }
 
 
-    // This handles
+    // This handles the icons and display of polymorphic entries
     function polymorphicItemFormatter(value) {
 
         var item_destination = '';
@@ -343,6 +355,15 @@ $('.snipe-table').bootstrapTable({
         }
     }
 
+    function deployedLocationFormatter(row, value) {
+        if ((row) && (row!=undefined)) {
+            return '<a href="{{ url('/') }}/locations/' + row.id + '"> ' + row.name + '</a>';
+        } else if (value.rtd_location) {
+            return '<a href="{{ url('/') }}/locations/' + value.rtd_location.id + '" data-tooltip="true" title="Default Location"> ' + value.rtd_location.name + '</a>';
+        }
+
+    }
+
     function groupsAdminLinkFormatter(value, row) {
         return '<a href="{{ url('/') }}/admin/groups/' + row.id + '"> ' + value + '</a>';
     }
@@ -419,6 +440,15 @@ $('.snipe-table').bootstrapTable({
         }
     }
 
+    function sumFormatter(data) {
+        var field = this.field;
+        var total_sum = data.reduce(function(sum, row) {
+            return (sum) + (parseFloat(row[field]) || 0);
+        }, 0);
+        return total_sum.toFixed(2);
+    }
+    
+
     $(function () {
         $('#bulkEdit').click(function () {
             var selectedIds = $('.snipe-table').bootstrapTable('getSelections');
@@ -429,7 +459,9 @@ $('.snipe-table').bootstrapTable({
         });
     });
 
-    // This is necessary to make the bootstrap tooltips work inside of the wenzhixin/bootstrap-table formatters
+
+    // This is necessary to make the bootstrap tooltips work inside of the
+    // wenzhixin/bootstrap-table formatters
     $(function() {
         $('#table').on('post-body.bs.table', function () {
             $('[data-tooltip="true"]').tooltip({
@@ -437,6 +469,8 @@ $('.snipe-table').bootstrapTable({
             });
         });
     });
+
+
 
 
 </script>

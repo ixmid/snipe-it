@@ -468,7 +468,7 @@ class AssetsController extends Controller
         if (request('assigned_user')) {
             $target = User::find(request('assigned_user'));
         } elseif (request('assigned_asset')) {
-            $target = Asset::find(request('assigned_asset'));
+            $target = Asset::where('id','!=',$assetId)->find(request('assigned_asset'));
         } elseif (request('assigned_location')) {
             $target = Location::find(request('assigned_location'));
         }
@@ -685,8 +685,11 @@ class AssetsController extends Controller
                 $header = ['Content-type' => 'image/png'];
                 return response()->file($barcode_file, $header);
             } else {
+                // Calculate barcode width in pixel based on label width (inch)
+                $barcode_width = ($settings->labels_width - $settings->labels_display_sgutter) * 96.000000000001;
+
                 $barcode = new \Com\Tecnick\Barcode\Barcode();
-                $barcode_obj = $barcode->getBarcodeObj($settings->alt_barcode,$asset->asset_tag,300,50);
+                $barcode_obj = $barcode->getBarcodeObj($settings->alt_barcode,$asset->asset_tag,($barcode_width < 300 ? $barcode_width : 300),50);
 
                 file_put_contents($barcode_file, $barcode_obj->getPngData());
                 return response($barcode_obj->getPngData())->header('Content-type', 'image/png');
@@ -1192,6 +1195,9 @@ class AssetsController extends Controller
         $user = User::find(e(Input::get('assigned_to')));
         $admin = Auth::user();
 
+        if (!is_array(Input::get('selected_assets'))) {
+            return redirect()->route('hardware/bulkcheckout')->withInput()->with('error', trans('admin/hardware/message.checkout.no_assets_selected'));
+        }
         $asset_ids = array_filter(Input::get('selected_assets'));
 
         if ((Input::has('checkout_at')) && (Input::get('checkout_at')!= date("Y-m-d"))) {
