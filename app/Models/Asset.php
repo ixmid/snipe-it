@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Log;
 use Watson\Validating\ValidatingTrait;
 use Illuminate\Notifications\Notifiable;
+use DB;
 
 /**
  * Model for Assets.
@@ -173,6 +174,10 @@ class Asset extends Depreciable
 
         if ($location != null) {
             $this->location_id = $location;
+        } else {
+            if($target->location) {
+                $this->location_id = $target->location->id;
+            }
         }
 
         if ($this->requireAcceptance()) {
@@ -218,7 +223,7 @@ class Asset extends Depreciable
      */
     public function components()
     {
-        return $this->belongsToMany('\App\Models\Component', 'components_assets', 'asset_id', 'component_id')->withPivot('id')->withTrashed();
+        return $this->belongsToMany('\App\Models\Component', 'components_assets', 'asset_id', 'component_id')->withPivot('id', 'assigned_qty')->withTrashed();
     }
 
   /**
@@ -226,7 +231,9 @@ class Asset extends Depreciable
    */
     public function get_depreciation()
     {
-        return $this->model->depreciation;
+        if (($this->model) && ($this->model->depreciation)) {
+            return $this->model->depreciation;
+        }
     }
 
   /**
@@ -814,7 +821,7 @@ class Asset extends Depreciable
                  })->orWhere(function ($query) use ($search) {
                          $query->where('assets_users.first_name', 'LIKE', '%'.$search.'%')
                          ->orWhere('assets_users.last_name', 'LIKE', '%'.$search.'%')
-                         ->orWhereRaw('CONCAT(assets_users.first_name," ",assets_users.last_name) LIKE ?', ["%$search%", "%$search%"])
+                         ->orWhereRaw('CONCAT('.DB::getTablePrefix().'assets_users.first_name," ",'.DB::getTablePrefix().'assets_users.last_name) LIKE ?', ["%$search%", "%$search%"])
                          ->orWhere('assets_users.username', 'LIKE', '%'.$search.'%')
                          ->orWhere('assets_locations.name', 'LIKE', '%'.$search.'%')
                          ->orWhere('assigned_assets.name', 'LIKE', '%'.$search.'%');
@@ -822,7 +829,6 @@ class Asset extends Depreciable
                     ->orWhere('assets.asset_tag', 'LIKE', '%'.$search.'%')
                     ->orWhere('assets.serial', 'LIKE', '%'.$search.'%')
                     ->orWhere('assets.order_number', 'LIKE', '%'.$search.'%')
-                    ->orWhere('assets.purchase_date', 'LIKE', '%'.$search.'%')
                     ->orWhere('assets.purchase_cost', 'LIKE', '%'.$search.'%')
                     ->orWhere('assets.notes', 'LIKE', '%'.$search.'%');
             }
@@ -873,7 +879,7 @@ class Asset extends Depreciable
                 })->orWhere(function ($query) use ($search) {
                     $query->where('assets_users.first_name', 'LIKE', '%'.$search.'%')
                         ->orWhere('assets_users.last_name', 'LIKE', '%'.$search.'%')
-                        ->orWhereRaw('CONCAT(assets_users.first_name," ",assets_users.last_name) LIKE ?', ["%$search%", "%$search%"])
+                        ->orWhereRaw('CONCAT('.DB::getTablePrefix().'assets_users.first_name," ",'.DB::getTablePrefix().'assets_users.last_name) LIKE ?', ["%$search%", "%$search%"])
                         ->orWhere('assets_users.username', 'LIKE', '%'.$search.'%')
                         ->orWhere('assets_locations.name', 'LIKE', '%'.$search.'%')
                         ->orWhere('assigned_assets.name', 'LIKE', '%'.$search.'%');
@@ -1156,6 +1162,18 @@ class Asset extends Depreciable
     public function scopeOrderLocation($query, $order)
     {
         return $query->leftJoin('locations as asset_locations', 'asset_locations.id', '=', 'assets.location_id')->orderBy('asset_locations.name', $order);
+    }
+
+    /**
+     * Query builder scope to order on default
+     * @param  \Illuminate\Database\Query\Builder  $query  Query builder instance
+     * @param  text                              $order       Order
+     *
+     * @return \Illuminate\Database\Query\Builder          Modified query builder
+     */
+    public function scopeOrderRtdLocation($query, $order)
+    {
+        return $query->leftJoin('locations as rtd_asset_locations', 'rtd_asset_locations.id', '=', 'assets.rtd_location_id')->orderBy('rtd_asset_locations.name', $order);
     }
 
 

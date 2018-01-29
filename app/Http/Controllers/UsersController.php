@@ -431,7 +431,7 @@ class UsersController extends Controller
     public function postBulkEdit(Request $request)
     {
         $this->authorize('update', User::class);
-        if ((!Input::has('ids')) || (count(Input::has('ids')) == 0)) {
+        if ((!Input::has('ids')) || (count(Input::input('ids')) == 0)) {
             return redirect()->back()->with('error', 'No users selected');
         } else {
 
@@ -461,7 +461,7 @@ class UsersController extends Controller
     public function postBulkEditSave(Request $request)
     {
         $this->authorize('update', User::class);
-        if ((!Input::has('ids')) || (count(Input::has('ids')) == 0)) {
+        if ((!Input::has('ids')) || (count(Input::input('ids')) == 0)) {
             return redirect()->back()->with('error', 'No users selected');
         } else {
 
@@ -480,6 +480,11 @@ class UsersController extends Controller
             if ($request->has('company_id')) {
                 $update_array['company_id'] = $request->input('company_id');
             }
+            if ($request->has('locale')) {
+                $update_array['locale'] = $request->input('locale');
+            }
+
+
 
             if ($request->has('manager_id')) {
 

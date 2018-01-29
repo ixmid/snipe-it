@@ -80,6 +80,8 @@
               class="table table-striped snipe-table"
               id="table"
               data-advanced-search="true"
+              data-show-export="true"
+              data-cookie="true" 
               data-id-table="advancedTable"
               data-url="{{ route('api.assets.index',
                   array('status' => e(Input::get('status')),

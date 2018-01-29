@@ -39,7 +39,7 @@
           </div>
           @endif
 
-          @if ($accessory->category->name)
+          @if ($accessory->category)
           <!-- accessory name -->
           <div class="form-group">
             <label class="col-sm-3 control-label">{{ trans('admin/accessories/general.accessory_category') }}</label>
@@ -53,7 +53,7 @@
 
           @include ('partials.forms.edit.user-select', ['translated_name' => trans('general.select_user'), 'fieldname' => 'assigned_to'])
 
-          @if ($accessory->category->require_acceptance=='1')
+          @if (($accessory->category) && ($accessory->category->require_acceptance=='1'))
           <div class="form-group">
             <div class="col-md-9 col-md-offset-3">
               <p class="hint-block">{{ trans('admin/categories/general.required_acceptance') }}</p>
