@@ -34,7 +34,6 @@ use Config;
 use Gate;
 use Image;
 use League\Csv\Reader;
-use Log;
 use Mail;
 use Paginator;
 use Response;
@@ -185,6 +184,7 @@ class ZplPrintController extends Controller
         if ($socket === false) {
             $status = "ERROR";
             $statusMessage = "socket_create() failed: reason: " . socket_strerror(socket_last_error());
+            \Log::error("ZPL: " . $statusMessage);
             if($verbose) {
                 echo $statusMessage."<br>";
             }
@@ -201,6 +201,7 @@ class ZplPrintController extends Controller
         if ($result === false) {
             $status = "ERROR";
             $statusMessage = "socket_connect() failed.\nReason: ($result) " . socket_strerror(socket_last_error($socket));
+            \Log::error("ZPL: " . $statusMessage);
             if($verbose) {
                 echo $statusMessage."<br>";
             }
