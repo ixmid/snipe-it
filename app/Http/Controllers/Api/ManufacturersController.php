@@ -25,13 +25,19 @@ class ManufacturersController extends Controller
         $allowed_columns = ['id','name','url','support_url','support_email','support_phone','created_at','updated_at','image', 'assets_count', 'consumables_count', 'components_count', 'licenses_count'];
 
         $manufacturers = Manufacturer::select(
-            array('id','name','url','support_url','support_email','support_phone','created_at','updated_at','image')
+            array('id','name','url','support_url','support_email','support_phone','created_at','updated_at','image', 'deleted_at')
         )->withCount('assets')->withCount('licenses')->withCount('consumables')->withCount('accessories');
 
+        if ($request->input('deleted')=='true') {
+            $manufacturers->onlyTrashed();
+        }
 
         if ($request->has('search')) {
             $manufacturers = $manufacturers->TextSearch($request->input('search'));
         }
+
+
+
 
         $offset = request('offset', 0);
         $limit = $request->input('limit', 50);
@@ -93,7 +99,7 @@ class ManufacturersController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->authorize('edit', Manufacturer::class);
+        $this->authorize('update', Manufacturer::class);
         $manufacturer = Manufacturer::findOrFail($id);
         $manufacturer->fill($request->all());
 

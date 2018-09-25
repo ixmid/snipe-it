@@ -21,6 +21,10 @@
                 width: 100% !important;
             }
         }
+        .logo {
+            width:50px;
+            height:50px;
+        }
     </style>
 
     <table class="wrapper" width="100%" cellpadding="0" cellspacing="0">
@@ -32,7 +36,7 @@
                     <!-- Email Body -->
                     <tr>
                         <td class="body" width="100%" cellpadding="0" cellspacing="0">
-                            <table class="inner-body" align="center" width="570" cellpadding="0" cellspacing="0">
+                            <table class="inner-body" align="center" width="90%" cellpadding="0" cellspacing="0">
                                 <!-- Body content -->
                                 <tr>
                                     <td class="content-cell">
@@ -46,6 +50,7 @@
                     </tr>
 
                     {{ $footer or '' }}
+
                 </table>
             </td>
         </tr>

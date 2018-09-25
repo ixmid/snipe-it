@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use App\Models\Traits\Searchable;
 use App\Presenters\Presentable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Watson\Validating\ValidatingTrait;
@@ -21,9 +22,7 @@ class Manufacturer extends SnipeModel
         'support_email'   => 'email|nullable'
     );
 
-    protected $hidden = ['user_id','deleted_at'];
-
-
+    protected $hidden = ['user_id'];
 
     /**
     * Whether the model should inject it's identifier to the unique
@@ -40,7 +39,30 @@ class Manufacturer extends SnipeModel
      *
      * @var array
      */
-    protected $fillable = ['name','url','support_url','support_phone','support_email'];
+    protected $fillable = [
+        'name',
+        'image',
+        'support_email',
+        'support_phone',
+        'support_url',
+        'url',
+    ];
+
+    use Searchable;
+    
+    /**
+     * The attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableAttributes = ['name', 'created_at'];
+
+    /**
+     * The relations and their attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableRelations = [];    
 
 
 
@@ -72,22 +94,5 @@ class Manufacturer extends SnipeModel
     public function consumables()
     {
         return $this->hasMany('\App\Models\Consumable', 'manufacturer_id');
-    }
-
-    /**
-    * Query builder scope to search on text
-    *
-    * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-    * @param  text                              $search      Search term
-    *
-    * @return Illuminate\Database\Query\Builder          Modified query builder
-    */
-    public function scopeTextSearch($query, $search)
-    {
-
-        return $query->where(function ($query) use ($search) {
-        
-            $query->where('name', 'LIKE', '%'.$search.'%');
-        });
     }
 }

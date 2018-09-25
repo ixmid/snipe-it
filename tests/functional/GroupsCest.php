@@ -8,8 +8,8 @@ class GroupsCest
     public function _before(FunctionalTester $I)
     {
          $I->amOnPage('/login');
-         $I->fillField('username', 'snipeit');
-         $I->fillField('password', 'snipeit');
+         $I->fillField('username', 'admin');
+         $I->fillField('password', 'password');
          $I->click('Login');
     }
 
@@ -58,7 +58,8 @@ class GroupsCest
 
     public function allowsDelete(FunctionalTester $I, $scenario)
     {
-        $scenario->incomplete('Fix this test to generate a group for deletes');
+        $scenario->incomplete('Fix this test to generate a group for deleting');
+
         $I->wantTo('Ensure I can delete a group');
 
         // create a group

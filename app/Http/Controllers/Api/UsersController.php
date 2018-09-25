@@ -28,30 +28,32 @@ class UsersController extends Controller
         $this->authorize('view', User::class);
 
         $users = User::select([
-            'users.id',
-            'users.employee_num',
-            'users.two_factor_enrolled',
-            'users.jobtitle',
-            'users.email',
-            'users.phone',
+            'users.activated',
             'users.address',
+            'users.avatar',
             'users.city',
-            'users.state',
-            'users.country',
-            'users.zip',
-            'users.username',
-            'users.location_id',
-            'users.manager_id',
-            'users.first_name',
-            'users.last_name',
-            'users.created_at',
-            'users.notes',
             'users.company_id',
-            'users.last_login',
+            'users.country',
+            'users.created_at',
             'users.deleted_at',
             'users.department_id',
-            'users.activated',
-            'users.avatar',
+            'users.email',
+            'users.employee_num',
+            'users.first_name',
+            'users.id',
+            'users.jobtitle',
+            'users.last_login',
+            'users.last_name',
+            'users.location_id',
+            'users.manager_id',
+            'users.notes',
+            'users.permissions',
+            'users.phone',
+            'users.state',
+            'users.two_factor_enrolled',
+            'users.updated_at',
+            'users.username',
+            'users.zip',
 
         ])->with('manager', 'groups', 'userloc', 'company', 'department','assets','licenses','accessories','consumables')
             ->withCount('assets','licenses','accessories','consumables');
@@ -69,7 +71,7 @@ class UsersController extends Controller
         if ($request->has('location_id')) {
             $users = $users->where('users.location_id', '=', $request->input('location_id'));
         }
-        
+
         if ($request->has('group_id')) {
             $users = $users->ByGroup($request->get('group_id'));
         }
@@ -103,7 +105,7 @@ class UsersController extends Controller
                         'assets','accessories', 'consumables','licenses','groups','activated','created_at',
                         'two_factor_enrolled','two_factor_optin','last_login', 'assets_count', 'licenses_count',
                         'consumables_count', 'accessories_count', 'phone', 'address', 'city', 'state',
-                        'country', 'zip'
+                        'country', 'zip', 'id'
                     ];
 
                 $sort = in_array($request->get('sort'), $allowed_columns) ? $request->get('sort') : 'first_name';
@@ -140,7 +142,7 @@ class UsersController extends Controller
                 'users.avatar',
                 'users.email',
             ]
-            );
+            )->where('show_in_list', '=', '1');
 
         $users = Company::scopeCompanyables($users);
 
@@ -189,12 +191,21 @@ class UsersController extends Controller
      */
     public function store(SaveUserRequest $request)
     {
-        $this->authorize('view', User::class);
+        $this->authorize('create', User::class);
+
         $user = new User;
         $user->fill($request->all());
-        $user->password = bcrypt($request->input('password'));
+
+        $tmp_pass = substr(str_shuffle("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 20);
+        $user->password = bcrypt($request->get('password', $tmp_pass));
 
         if ($user->save()) {
+            if ($request->has('groups')) {
+                $user->groups()->sync($request->input('groups'));
+            } else {
+                $user->groups()->sync(array());
+            }
+            
             return response()->json(Helper::formatStandardApiResponse('success', (new UsersTransformer)->transformUser($user), trans('admin/users/message.success.create')));
         }
         return response()->json(Helper::formatStandardApiResponse('error', null, $user->getErrors()));
@@ -226,7 +237,8 @@ class UsersController extends Controller
      */
     public function update(SaveUserRequest $request, $id)
     {
-        $this->authorize('edit', User::class);
+        $this->authorize('update', User::class);
+
         $user = User::findOrFail($id);
         $user->fill($request->all());
 
@@ -285,7 +297,49 @@ class UsersController extends Controller
     public function assets($id)
     {
         $this->authorize('view', User::class);
-        $assets = Asset::where('assigned_to', '=', $id)->with('model')->get();
+        $this->authorize('view', Asset::class);
+        $assets = Asset::where('assigned_to', '=', $id)->where('assigned_type', '=', User::class)->with('model')->get();
         return (new AssetsTransformer)->transformAssets($assets, $assets->count());
+    }
+
+    /**
+     * Reset the user's two-factor status
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v3.0]
+     * @param $userId
+     * @return string JSON
+     */
+    public function postTwoFactorReset(Request $request)
+    {
+
+        $this->authorize('update', User::class);
+
+        if ($request->has('id')) {
+            try {
+                $user = User::find($request->get('id'));
+                $user->two_factor_secret = null;
+                $user->two_factor_enrolled = 0;
+                $user->save();
+                return response()->json(['message' => trans('admin/settings/general.two_factor_reset_success')], 200);
+            } catch (\Exception $e) {
+                return response()->json(['message' => trans('admin/settings/general.two_factor_reset_error')], 500);
+            }
+        }
+        return response()->json(['message' => 'No ID provided'], 500);
+
+    }
+
+    /**
+     * Get info on the current user.
+     *
+     * @author [Juan Font] [<juanfontalonso@gmail.com>]
+     * @since [v4.4.2]
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function getCurrentUserInfo(Request $request)
+    {
+        return response()->json($request->user());
     }
 }

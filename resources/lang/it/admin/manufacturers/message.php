@@ -15,6 +15,11 @@ return array(
         'success' => 'Produttore aggiornato con successo.'
     ),
 
+    'restore' => array(
+        'error'   => 'Il produttore non è stato ripristinato, per favore riprova',
+        'success' => 'Produttore ripristinato con successo.'
+    ),
+
     'delete' => array(
         'confirm'   => 'Sei sicuro di voler eliminare questo produttore?',
         'error'   => 'C\'è stato un problema nell\'eliminazione del produttore. Riprova.',

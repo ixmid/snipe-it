@@ -15,6 +15,11 @@ return array(
         'success' => '更新製造商成功。'
     ),
 
+    'restore' => array(
+        'error'   => '製造商恢復失敗，請重試。',
+        'success' => '製造商恢復成功。'
+    ),
+
     'delete' => array(
         'confirm'   => '您確定要刪除此製造商嗎？',
         'error'   => '刪除製造商失敗，請重試。',

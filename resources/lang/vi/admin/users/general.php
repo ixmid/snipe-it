@@ -2,7 +2,8 @@
 
 
 return array(
-
+    'activated_help_text' => 'This user can login',
+    'activated_disabled_help_text' => 'You cannot edit activation status for your own account.',
     'assets_user'       => 'Tài sản đã được cấp phát đến :name',
     'bulk_update_warn'	=> 'Bạn sắp chỉnh sửa các thuộc tính của: user_count users. Xin lưu ý rằng bạn không thể thay đổi thuộc tính người dùng của mình bằng cách sử dụng biểu mẫu này và phải thực hiện chỉnh sửa cho người dùng riêng của mình.',
     'bulk_update_help'	=> 'Biểu mẫu này cho phép bạn cập nhật nhiều người dùng cùng một lúc. Chỉ điền vào các trường mà bạn cần thay đổi. Bất kỳ trường nào để trống sẽ không thay đổi.',
@@ -16,6 +17,7 @@ return array(
     'restore_user'		=> 'Nhấp vào đây để khôi phục chúng.',
     'last_login'        => 'Lần đăng nhập trước',
     'ldap_config_text'  => 'Bạn có thể tìm thấy cài đặt cấu hình LDAP Quản trị> Cài đặt. Địa điểm đã chọn (tùy chọn) sẽ được đặt cho tất cả người dùng được nhập.',
+    'print_assigned'    => 'Print All Assigned',
     'software_user'     => 'Phần mềm đã được checkout đến :name',
     'view_user'         => 'Xem người dùng :name',
     'usercsv'           => 'Tập tin CSV',

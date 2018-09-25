@@ -194,26 +194,13 @@ class ComponentsController extends Controller
     public function destroy($componentId)
     {
         if (is_null($component = Component::find($componentId))) {
-            return redirect()->route('components.index')->with('error', trans('admin/components/message.not_found'));
+            return redirect()->route('components.index')->with('error', trans('admin/components/message.does_not_exist'));
         }
 
         $this->authorize('delete', $component);
         $component->delete();
         return redirect()->route('components.index')->with('success', trans('admin/components/message.delete.success'));
     }
-
-    public function postBulk($componentId = null)
-    {
-        //$this->authorize('checkout', $component)
-        echo 'Stubbed - not yet complete';
-    }
-
-    public function postBulkSave($componentId = null)
-    {
-        //$this->authorize('edit', Component::class);
-        echo 'Stubbed - not yet complete';
-    }
-
 
     /**
     * Return a view to display component information.

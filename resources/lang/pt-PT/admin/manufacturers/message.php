@@ -15,6 +15,11 @@ return array(
         'success' => 'Fabricante atualizado com sucesso.'
     ),
 
+    'restore' => array(
+        'error'   => 'Não foi possível restaurar o fabricante, por favor tente novamente',
+        'success' => 'Fabricante restaurado com sucesso.'
+    ),
+
     'delete' => array(
         'confirm'   => 'Tem a certeza que pretende remover este fabricante?',
         'error'   => 'Ocorreu um problema ao remover este fabricante. Por favor, tente novamente.',

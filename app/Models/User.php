@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use App\Models\Traits\Searchable;
 use App\Presenters\Presentable;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Auth\Passwords\CanResetPassword;
@@ -9,6 +10,7 @@ use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
 use Watson\Validating\ValidatingTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Http\Traits\UniqueUndeletedTrait;
 use Illuminate\Notifications\Notifiable;
@@ -28,24 +30,26 @@ class User extends SnipeModel implements AuthenticatableContract, CanResetPasswo
     protected $table = 'users';
     protected $injectUniqueIdentifier = true;
     protected $fillable = [
-        'email',
-        'last_name',
-        'company_id',
-        'department_id',
-        'employee_num',
-        'jobtitle',
-        'location_id',
-        'password',
-        'phone',
-        'username',
-        'first_name',
+        'activated',
         'address',
         'city',
-        'state',
+        'company_id',
         'country',
-        'zip',
-        'activated',
+        'department_id',
+        'email',
+        'employee_num',
+        'first_name',
+        'jobtitle',
+        'last_name',
+        'ldap_import',
+        'locale',
+        'location_id',
         'manager_id',
+        'password',
+        'phone',
+        'state',
+        'username',
+        'zip',
     ];
 
     protected $casts = [
@@ -66,6 +70,35 @@ class User extends SnipeModel implements AuthenticatableContract, CanResetPasswo
         'locale'                  => 'max:10|nullable',
     ];
 
+    use Searchable;
+
+    /**
+     * The attributes that should be included when searching the model.
+     *
+     * @var array
+     */
+    protected $searchableAttributes = [
+        'first_name',
+        'last_name',
+        'email',
+        'username',
+        'notes',
+        'phone',
+        'jobtitle',
+        'employee_num'
+    ];
+
+    /**
+     * The relations and their attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableRelations = [
+        'userloc'    => ['name'],
+        'department' => ['name'],
+        'groups'     => ['name'],
+        'manager'    => ['first_name', 'last_name', 'username']
+    ];  
 
     public function hasAccess($section)
     {
@@ -148,6 +181,18 @@ class User extends SnipeModel implements AuthenticatableContract, CanResetPasswo
         return $this->last_name . ", " . $this->first_name . " (" . $this->username . ")";
     }
 
+    /**
+     * The url for slack notifications.
+     * Used by Notifiable trait.
+     * @return mixed
+     */
+    public function routeNotificationForSlack()
+    {
+        // At this point the endpoint is the same for everything.
+        //  In the future this may want to be adapted for individual notifications.
+        $this->endpoint = \App\Models\Setting::getSettings()->slack_endpoint;
+        return $this->endpoint;
+    }
 
 
     /**
@@ -156,7 +201,6 @@ class User extends SnipeModel implements AuthenticatableContract, CanResetPasswo
     public function assets()
     {
         return $this->morphMany('App\Models\Asset', 'assigned', 'assigned_type', 'assigned_to')->withTrashed();
-        // return $this->hasMany('\App\Models\Asset', 'assigned_to')->withTrashed();
     }
 
     /**
@@ -279,7 +323,7 @@ class User extends SnipeModel implements AuthenticatableContract, CanResetPasswo
      */
     public function checkoutRequests()
     {
-        return $this->belongsToMany(Asset::class, 'checkout_requests');
+        return $this->belongsToMany(Asset::class, 'checkout_requests', 'user_id', 'requestable_id')->whereNull('canceled_at');
     }
 
     public function throttle()
@@ -297,24 +341,6 @@ class User extends SnipeModel implements AuthenticatableContract, CanResetPasswo
         return $query->whereNull('deleted_at');
     }
 
-    /**
-     * Override the SentryUser getPersistCode method for
-     * multiple logins at one time
-     **/
-    public function getPersistCode()
-    {
-
-        if (!config('session.multi_login') || (!$this->persist_code)) {
-            $this->persist_code = $this->getRandomString();
-
-            // Our code got hashed
-            $persistCode = $this->persist_code;
-            $this->save();
-            return $persistCode;
-        }
-        return $this->persist_code;
-    }
-
     public function scopeMatchEmailOrUsername($query, $user_username, $user_email)
     {
         return $query->where('email', '=', $user_email)
@@ -330,44 +356,37 @@ class User extends SnipeModel implements AuthenticatableContract, CanResetPasswo
 
     public static function generateFormattedNameFromFullName($format = 'filastname', $users_name)
     {
-        $name = explode(" ", $users_name);
-        $name = str_replace("'", '', $name);
-        $first_name = $name[0];
-        $email_last_name = '';
-        $email_prefix = $first_name;
 
-        // If there is no last name given
-        if (!array_key_exists(1, $name)) {
-            $last_name='';
-            $email_last_name = $last_name;
-            $user_username = $first_name;
+        // If there was only one name given
+        if (strpos($users_name, ' ') === false) {
+            $first_name = $users_name;
+            $last_name = '';
+            $username  = $users_name;
 
-            // There is a last name given
         } else {
 
-            $last_name = str_replace($first_name . ' ', '', $users_name);
+            list($first_name, $last_name) = explode(" ", $users_name, 2);
 
-            if ($format=='filastname') {
-                $email_last_name.=str_replace(' ', '', $last_name);
-                $email_prefix = $first_name[0].$email_last_name;
+            // Assume filastname by default
+            $username = str_slug(substr($first_name, 0, 1).$last_name);
 
-            } elseif ($format=='firstname.lastname') {
-                $email_last_name.=str_replace(' ', '', $last_name);
-                $email_prefix = $first_name.'.'.$email_last_name;
+            if ($format=='firstname.lastname') {
+                $username = str_slug($first_name) . '.' . str_slug($last_name);
+
+            } elseif ($format=='lastnamefirstinitial') {
+                $username = str_slug($last_name.substr($first_name, 0, 1));
+
+            } elseif ($format=='firstname_lastname') {
+                $username = str_slug($first_name).'_'.str_slug($last_name);
 
             } elseif ($format=='firstname') {
-                $email_last_name.=str_replace(' ', '', $last_name);
-                $email_prefix = $first_name;
+                $username = str_slug($first_name);
             }
-
-
         }
 
-        $user_username = $email_prefix;
         $user['first_name'] = $first_name;
         $user['last_name'] = $last_name;
-        $user['username'] = strtolower($user_username);
-
+        $user['username'] = strtolower($username);
         return $user;
 
 
@@ -398,61 +417,28 @@ class User extends SnipeModel implements AuthenticatableContract, CanResetPasswo
         return json_decode($this->permissions, true);
     }
 
+    /**
+     * Run additional, advanced searches.
+     *
+     * @param  Illuminate\Database\Eloquent\Builder $query
+     * @param  array  $term The search terms
+     * @return Illuminate\Database\Eloquent\Builder
+     */
+    public function advancedTextSearch(Builder $query, array $terms) {
+
+        foreach($terms as $term) {
+            $query = $query->orWhereRaw('CONCAT('.DB::getTablePrefix().'users.first_name," ",'.DB::getTablePrefix().'users.last_name) LIKE ?', ["%$term%", "%$term%"]);
+        }
+
+        return $query;
+    }
+
 
     public function scopeByGroup($query, $id) {
         return $query->whereHas('groups', function ($query) use ($id) {
             $query->where('groups.id', '=', $id);
         });
     }
-
-
-    /**
-     * Query builder scope to search on text
-     *
-     * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-     * @param  text                              $search      Search term
-     *
-     * @return Illuminate\Database\Query\Builder          Modified query builder
-     */
-    public function scopeTextsearch($query, $search)
-    {
-
-        return $query->where(function ($query) use ($search) {
-            $query->where('users.first_name', 'LIKE', "%$search%")
-                ->orWhere('users.last_name', 'LIKE', "%$search%")
-                ->orWhere('users.email', 'LIKE', "%$search%")
-                ->orWhere('users.username', 'LIKE', "%$search%")
-                ->orWhere('users.notes', 'LIKE', "%$search%")
-                ->orWhere('users.phone', 'LIKE', "%$search%")
-                ->orWhere('users.jobtitle', 'LIKE', "%$search%")
-                ->orWhere('users.employee_num', 'LIKE', "%$search%")
-                ->orWhereRaw('CONCAT('.DB::getTablePrefix().'users.first_name," ",'.DB::getTablePrefix().'users.last_name) LIKE ?', ["%$search%", "%$search%"])
-                ->orWhere(function ($query) use ($search) {
-                    $query->whereHas('userloc', function ($query) use ($search) {
-                        $query->where('locations.name', 'LIKE', '%'.$search.'%');
-                    });
-                })
-                ->orWhere(function ($query) use ($search) {
-                    $query->whereHas('department', function ($query) use ($search) {
-                        $query->where('departments.name', 'LIKE', '%'.$search.'%');
-                    });
-                })
-                ->orWhere(function ($query) use ($search) {
-                    $query->whereHas('groups', function ($query) use ($search) {
-                        $query->where('groups.name', 'LIKE', '%'.$search.'%');
-                    });
-                })
-
-                 //Ugly, ugly code because Laravel sucks at self-joins
-                ->orWhere(function ($query) use ($search) {
-                    $query->whereRaw(DB::getTablePrefix()."users.manager_id IN (select id from ".DB::getTablePrefix()."users where first_name LIKE ? OR last_name LIKE ?)", ["%$search%", "%$search%"]);
-                });
-
-
-        });
-
-    }
-
 
     /**
      * Query builder scope for Deleted users

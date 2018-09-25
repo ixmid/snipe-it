@@ -38,6 +38,7 @@ return array(
     'tag'				=> 'Materiaaltag',
     'update'			=> 'Materiaalupdate',
     'warranty'			=> 'Garantie',
+		'warranty_expires'		=> 'Garantie vervalt',
     'years'				=> 'jaar',
 )
 ;

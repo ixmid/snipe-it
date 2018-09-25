@@ -3,6 +3,7 @@ namespace App\Models;
 
 use App\Http\Traits\UniqueUndeletedTrait;
 use App\Models\SnipeModel;
+use App\Models\Traits\Searchable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Watson\Validating\ValidatingTrait;
@@ -14,7 +15,7 @@ class Supplier extends SnipeModel
     protected $table = 'suppliers';
 
     protected $rules = array(
-        'name'              => 'required|min:3|max:255|unique_undeleted',
+        'name'              => 'required|min:1|max:255|unique_undeleted',
         'address'           => 'max:50|nullable',
         'address2'          => 'max:50|nullable',
         'city'              => 'max:255|nullable',
@@ -23,7 +24,7 @@ class Supplier extends SnipeModel
         'fax'               => 'min:7|max:35|nullable',
         'phone'             => 'min:7|max:35|nullable',
         'contact'           => 'max:100|nullable',
-        'notes'             => 'max:255|nullable',
+        'notes'             => 'max:191|nullable', // Default string length is 191 characters..
         'email'             => 'email|max:150|nullable',
         'zip'               => 'max:10|nullable',
         'url'               => 'sometimes|nullable|string|max:250',
@@ -39,6 +40,23 @@ class Supplier extends SnipeModel
     protected $injectUniqueIdentifier = true;
     use ValidatingTrait;
     use UniqueUndeletedTrait;
+
+    use Searchable;
+    
+    /**
+     * The attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableAttributes = ['name'];
+
+    /**
+     * The relations and their attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableRelations = [];
+
 
     /**
      * The attributes that are mass assignable.
@@ -103,22 +121,5 @@ class Supplier extends SnipeModel
             $url = "http://" . $url;
         }
         return $url;
-    }
-
-    /**
-    * Query builder scope to search on text
-    *
-    * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-    * @param  text                              $search      Search term
-    *
-    * @return Illuminate\Database\Query\Builder          Modified query builder
-    */
-    public function scopeTextSearch($query, $search)
-    {
-
-        return $query->where(function ($query) use ($search) {
-        
-            $query->where('name', 'LIKE', '%'.$search.'%');
-        });
     }
 }

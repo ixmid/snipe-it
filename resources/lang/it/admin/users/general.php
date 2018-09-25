@@ -2,7 +2,8 @@
 
 
 return array(
-
+    'activated_help_text' => 'This user can login',
+    'activated_disabled_help_text' => 'You cannot edit activation status for your own account.',
     'assets_user'       => 'Bene assegnato a :name',
     'bulk_update_warn'	=> 'Stai per modificare le proprietà di: user_count users. Tieni presente che non puoi modificare i tuoi attributi utente utilizzando questo modulo e devi modificare individualmente il tuo utente.',
     'bulk_update_help'	=> 'Questo modulo consente di aggiornare più utenti contemporaneamente. Inserisci solo i campi che devi modificare. Tutti i campi lasciati vuoti rimarranno invariati.',
@@ -16,6 +17,7 @@ return array(
     'restore_user'		=> 'Clicca qui per ripristinarli.',
     'last_login'        => 'Ultimo accesso',
     'ldap_config_text'  => 'Le impostazioni di configurazione di LDAP possono essere trovate su Admin > Impostazioni. La posizione selezionata (facoltativa) verrà impostata per tutti gli utenti importati.',
+    'print_assigned'    => 'Stampa tutti assegnati',
     'software_user'     => 'Software estratto a :name',
     'view_user'         => 'Visualizza Utente :name',
     'usercsv'           => 'CSV file',

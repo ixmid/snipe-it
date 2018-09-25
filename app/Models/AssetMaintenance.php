@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use App\Helpers\Helper;
+use App\Models\Traits\Searchable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -19,7 +20,7 @@ class AssetMaintenance extends Model implements ICompanyableChild
     use ValidatingTrait;
 
 
-    protected $dates = [ 'deleted_at' ];
+    protected $dates = [ 'deleted_at', 'start_date' , 'completion_date'];
     protected $table = 'asset_maintenances';
     // Declaring rules for form validation
     protected $rules = [
@@ -28,11 +29,28 @@ class AssetMaintenance extends Model implements ICompanyableChild
         'asset_maintenance_type' => 'required',
         'title'                  => 'required|max:100',
         'is_warranty'            => 'boolean',
-        'start_date'             => 'required|date_format:"Y-m-d"',
-        'completion_date'        => 'nullable|date_format:"Y-m-d"',
+        'start_date'             => 'required|date',
+        'completion_date'        => 'nullable|date',
         'notes'                  => 'string|nullable',
         'cost'                   => 'numeric|nullable'
     ];
+
+    use Searchable;
+    
+    /**
+     * The attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableAttributes = ['title', 'notes', 'asset_maintenance_type', 'cost', 'start_date', 'completion_date'];
+
+    /**
+     * The relations and their attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableRelations = []; 
+
 
     public function getCompanyableParents()
     {
@@ -52,7 +70,8 @@ class AssetMaintenance extends Model implements ICompanyableChild
         return [
             trans('admin/asset_maintenances/general.maintenance') => trans('admin/asset_maintenances/general.maintenance'),
             trans('admin/asset_maintenances/general.repair')      => trans('admin/asset_maintenances/general.repair'),
-            trans('admin/asset_maintenances/general.upgrade')     => trans('admin/asset_maintenances/general.upgrade')
+            trans('admin/asset_maintenances/general.upgrade')     => trans('admin/asset_maintenances/general.upgrade'),
+            'PAT test'      => 'PAT test',
         ];
     }
 
@@ -138,30 +157,8 @@ class AssetMaintenance extends Model implements ICompanyableChild
    * -----------------------------------------------
    * BEGIN QUERY SCOPES
    * -----------------------------------------------
-   **/
-    
+   **/ 
 
-    /**
-      * Query builder scope to search on text
-      *
-      * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-      * @param  text                              $search      Search term
-      *
-      * @return Illuminate\Database\Query\Builder          Modified query builder
-      */
-    public function scopeTextSearch($query, $search)
-    {
-
-         return $query->where(function ($query) use ($search) {
-
-                $query->where('title', 'LIKE', '%'.$search.'%')
-                ->orWhere('notes', 'LIKE', '%'.$search.'%')
-                ->orWhere('asset_maintenance_type', 'LIKE', '%'.$search.'%')
-                ->orWhere('cost', 'LIKE', '%'.$search.'%')
-                ->orWhere('start_date', 'LIKE', '%'.$search.'%')
-                ->orWhere('completion_date', 'LIKE', '%'.$search.'%');
-         });
-    }
 
     /**
      * Query builder scope to order on admin user
@@ -176,5 +173,33 @@ class AssetMaintenance extends Model implements ICompanyableChild
         return $query->leftJoin('users', 'asset_maintenances.user_id', '=', 'users.id')
             ->orderBy('users.first_name', $order)
             ->orderBy('users.last_name', $order);
+    }
+
+    /**
+     * Query builder scope to order on asset tag
+     *
+     * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
+     * @param  text                              $order       Order
+     *
+     * @return Illuminate\Database\Query\Builder          Modified query builder
+     */
+    public function scopeOrderByTag($query, $order)
+    {
+        return $query->leftJoin('assets', 'asset_maintenances.asset_id', '=', 'assets.id')
+            ->orderBy('assets.asset_tag', $order);
+    }
+
+    /**
+     * Query builder scope to order on asset tag
+     *
+     * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
+     * @param  text                              $order       Order
+     *
+     * @return Illuminate\Database\Query\Builder          Modified query builder
+     */
+    public function scopeOrderByAssetName($query, $order)
+    {
+        return $query->leftJoin('assets', 'asset_maintenances.asset_id', '=', 'assets.id')
+            ->orderBy('assets.name', $order);
     }
 }

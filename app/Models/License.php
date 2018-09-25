@@ -5,6 +5,7 @@ use App\Models\Actionlog;
 use App\Models\Company;
 use App\Models\LicenseSeat;
 use App\Models\Loggable;
+use App\Models\Traits\Searchable;
 use App\Presenters\Presentable;
 use Carbon\Carbon;
 use DB;
@@ -16,6 +17,14 @@ use Watson\Validating\ValidatingTrait;
 class License extends Depreciable
 {
     protected $presenter = 'App\Presenters\LicensePresenter';
+
+    /**
+     * Set static properties to determine which checkout/checkin handlers we should use
+     */
+    public static $checkoutClass = CheckoutLicenseNotification::class;
+    public static $checkinClass = CheckinLicenseNotification::class;
+
+
     use SoftDeletes;
     use CompanyableTrait;
     use Loggable, Presentable;
@@ -27,7 +36,9 @@ class License extends Depreciable
         'created_at',
         'updated_at',
         'deleted_at',
-        'purchase_date'
+        'purchase_date',
+        'expiration_date',
+        'termination_date'
     ];
 
 
@@ -40,8 +51,8 @@ class License extends Depreciable
         'seats'   => 'required|min:1|max:1000000|integer',
         'license_email'   => 'email|nullable|max:120',
         'license_name'   => 'string|nullable|max:100',
-        'note'   => 'string|nullable',
         'notes'   => 'string|nullable',
+        'category_id' => 'required|exists:categories,id',
         'company_id' => 'integer|nullable',
     );
 
@@ -51,26 +62,55 @@ class License extends Depreciable
     * @var array
     */
     protected $fillable = [
-        'name',
-        'serial',
-        'purchase_date',
-        'purchase_cost',
-        'order_number',
-        'seats',
-        'notes',
-        'user_id',
-        'depreciation_id',
-        'license_name', //actually licensed_to
-        'license_email',
-        'supplier_id',
-        'expiration_date',
-        'purchase_order',
-        'termination_date',
-        'maintained',
-        'reassignable',
         'company_id',
-        'manufacturer_id'
+        'depreciation_id',
+        'expiration_date',
+        'license_email',
+        'license_name', //actually licensed_to
+        'maintained',
+        'manufacturer_id',
+        'category_id',
+        'name',
+        'notes',
+        'order_number',
+        'purchase_cost',
+        'purchase_date',
+        'purchase_order',
+        'reassignable',
+        'seats',
+        'serial',
+        'supplier_id',
+        'termination_date',
+        'user_id',
     ];
+
+    use Searchable;
+    
+    /**
+     * The attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableAttributes = [
+        'name', 
+        'serial', 
+        'notes', 
+        'order_number', 
+        'purchase_order', 
+        'purchase_cost', 
+        'purchase_date',
+        'expiration_date',
+    ];
+
+    /**
+     * The relations and their attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableRelations = [
+      'manufacturer' => ['name'],
+      'company'      => ['name'],
+    ];    
 
     public static function boot()
     {
@@ -84,7 +124,6 @@ class License extends Depreciable
         static::updating(function ($license) {
             $newSeatCount = $license->getAttributes()['seats'];
             $oldSeatCount = isset($license->getOriginal()['seats']) ? $license->getOriginal()['seats'] : 0;
-            // dd($oldSeatCount.' '.$newSeatCount);
             return static::adjustSeatCount($license, $oldSeatCount, $newSeatCount);
         });
     }
@@ -99,7 +138,7 @@ class License extends Depreciable
         $change = abs($oldSeats - $newSeats);
         if ($oldSeats > $newSeats) {
             $license->load('licenseseats.user');
-            // dd("Here");
+
             // Need to delete seats... lets see if if we have enough.
             $seatsAvailableForDelete = $license->licenseseats->reject(function ($seat) {
                 return (!! $seat->assigned_to) || (!! $seat->asset_id);
@@ -177,9 +216,37 @@ class License extends Depreciable
         return $this->belongsTo('\App\Models\Company', 'company_id');
     }
 
+    public function category()
+    {
+        return $this->belongsTo('\App\Models\Category', 'category_id');
+    }
+
     public function manufacturer()
     {
         return $this->belongsTo('\App\Models\Manufacturer', 'manufacturer_id');
+    }
+
+    public function checkin_email()
+    {
+        return $this->category->checkin_email;
+    }
+
+    public function requireAcceptance()
+    {
+        return $this->category->require_acceptance;
+    }
+
+    public function getEula()
+    {
+        $Parsedown = new \Parsedown();
+
+        if ($this->category->eula_text) {
+            return $Parsedown->text(e($this->category->eula_text));
+        } elseif ($this->category->use_default_eula == '1') {
+            return $Parsedown->text(e(Setting::getSettings()->default_eula_text));
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -376,39 +443,6 @@ class License extends Depreciable
         ->orderBy('expiration_date', 'ASC')
         ->get();
 
-    }
-
-    /**
-    * Query builder scope to search on text
-    *
-    * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-    * @param  text                              $search      Search term
-    *
-    * @return Illuminate\Database\Query\Builder          Modified query builder
-    */
-    public function scopeTextSearch($query, $search)
-    {
-
-        return $query->where(function ($query) use ($search) {
-
-            $query->where('licenses.name', 'LIKE', '%'.$search.'%')
-                ->orWhere('licenses.serial', 'LIKE', '%'.$search.'%')
-                ->orWhere('licenses.notes', 'LIKE', '%'.$search.'%')
-                ->orWhere('licenses.order_number', 'LIKE', '%'.$search.'%')
-                ->orWhere('licenses.purchase_order', 'LIKE', '%'.$search.'%')
-                ->orWhere('licenses.purchase_date', 'LIKE', '%'.$search.'%')
-                ->orWhere('licenses.purchase_cost', 'LIKE', '%'.$search.'%')
-             ->orWhereHas('manufacturer', function ($query) use ($search) {
-                        $query->where(function ($query) use ($search) {
-                            $query->where('manufacturers.name', 'LIKE', '%'.$search.'%');
-                        });
-             })
-            ->orWhereHas('company', function ($query) use ($search) {
-                $query->where(function ($query) use ($search) {
-                    $query->where('companies.name', 'LIKE', '%'.$search.'%');
-                });
-            });
-        });
     }
 
     /**

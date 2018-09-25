@@ -2,7 +2,8 @@
 
 
 return array(
-
+    'activated_help_text' => 'This user can login',
+    'activated_disabled_help_text' => 'You cannot edit activation status for your own account.',
     'assets_user'       => 'Activul desemnat catre :name',
     'bulk_update_warn'	=> 'Sunteți pe punctul de a edita proprietățile utilizatorilor: user_count. Rețineți că nu puteți modifica propriile atribute ale utilizatorilor utilizând acest formular și trebuie să efectuați modificări individuale ale propriului dvs. utilizator.',
     'bulk_update_help'	=> 'Acest formular vă permite să actualizați simultan mai mulți utilizatori. Completați câmpurile pe care trebuie să le schimbați. Toate câmpurile rămase necompletate vor rămâne neschimbate.',
@@ -16,6 +17,7 @@ return array(
     'restore_user'		=> 'Faceți clic aici pentru a le restaura.',
     'last_login'        => 'Ultima logare',
     'ldap_config_text'  => 'Setările de configurare LDAP pot fi găsite pe Administrator> Setări. Locația selectată (opțional) va fi setată pentru toți utilizatorii importați.',
+    'print_assigned'    => 'Print All Assigned',
     'software_user'     => 'Software predat catre :name',
     'view_user'         => 'Vezi utilizator :name',
     'usercsv'           => 'Fișier CSV',

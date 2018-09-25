@@ -2,7 +2,8 @@
 
 
 return array(
-
+    'activated_help_text' => 'This user can login',
+    'activated_disabled_help_text' => 'You cannot edit activation status for your own account.',
     'assets_user'       => 'Assets zugewiesen an :name',
     'bulk_update_warn'	=> 'Sie sind dabei, die Eigenschaften von :user_count Benutzern zu bearbeiten. Bitte beachten Sie, dass Sie Ihre eigenen Benutzerattribute nicht über dieses Formular ändern können. Sie müssen Ihren eigenen Benutzer einzeln bearbeiten.',
     'bulk_update_help'	=> 'Hier können mehrere Benutzer gleichzeitig bearbeitet werden. Nur Felder ausfüllen, welche geändert werden sollen. Leere Felder werden nicht geändert.',
@@ -16,8 +17,9 @@ return array(
     'restore_user'		=> 'Klicken Sie hier, um sie wiederherzustellen.',
     'last_login'        => 'Letzte Anmeldung',
     'ldap_config_text'  => 'Die LDAP Konfigurations Einstellungen finden Sie hier Admin -> Einstellungen. Der (optional) wählbare Standort wird für alle importierten Benutzer gesetzt.',
+    'print_assigned'    => 'Alles zugewiesene drucken',
     'software_user'     => 'Software herausgegeben an :name',
-    'view_user'         => 'Benutze :name ansehen',
+    'view_user'         => 'Benutzer :name ansehen',
     'usercsv'           => 'CSV Datei',
     'two_factor_admin_optin_help' => 'Ihre aktuellen Administrator-Einstellungen erlauben die selektive Durchführung der zwei-Faktor-Authentifizierung.  ',
     'two_factor_enrolled' => '2FA Gerät eingeschrieben ',

@@ -9,9 +9,11 @@ use App\Models\Category;
 use App\Models\Component;
 use App\Models\Consumable;
 use App\Models\CustomField;
+use App\Models\CustomFieldset;
 use App\Models\Department;
 use App\Models\License;
 use App\Models\Location;
+use App\Models\Depreciation;
 use App\Models\Statuslabel;
 use App\Models\Supplier;
 use App\Models\Manufacturer;
@@ -24,7 +26,9 @@ use App\Policies\CategoryPolicy;
 use App\Policies\ComponentPolicy;
 use App\Policies\ConsumablePolicy;
 use App\Policies\CustomFieldPolicy;
+use App\Policies\CustomFieldsetPolicy;
 use App\Policies\DepartmentPolicy;
+use App\Policies\DepreciationPolicy;
 use App\Policies\LicensePolicy;
 use App\Policies\LocationPolicy;
 use App\Policies\StatuslabelPolicy;
@@ -54,7 +58,9 @@ class AuthServiceProvider extends ServiceProvider
         Component::class => ComponentPolicy::class,
         Consumable::class => ConsumablePolicy::class,
         CustomField::class => CustomFieldPolicy::class,
+        CustomFieldset::class => CustomFieldsetPolicy::class,
         Department::class => DepartmentPolicy::class,
+        Depreciation::class => DepreciationPolicy::class,
         License::class => LicensePolicy::class,
         Location::class => LocationPolicy::class,
         Statuslabel::class => StatuslabelPolicy::class,
@@ -125,18 +131,27 @@ class AuthServiceProvider extends ServiceProvider
             }
         });
 
+        Gate::define('self.api', function($user) {
+            return $user->hasAccess('self.api');
+        });
+
+        Gate::define('self.edit_location', function($user) {
+            return $user->hasAccess('self.edit_location');
+        });
+
         Gate::define('backend.interact', function ($user) {
-            return $user->can('view', \App\Models\Statuslabel::class)
-                || $user->can('view', \App\Models\AssetModel::class)
-                || $user->can('view', \App\Models\Category::class)
-                || $user->can('view', \App\Models\Manufacturer::class)
-                || $user->can('view', \App\Models\Supplier::class)
-                || $user->can('view', \App\Models\Department::class)
-                || $user->can('view', \App\Models\Location::class)
-                || $user->can('view', \App\Models\Company::class)
-                || $user->can('view', \App\Models\Manufacturer::class)
-                || $user->can('view', \App\Models\Company::class)
-                || $user->can('view', \App\Models\Depreciation::class);
+            return $user->can('view', Statuslabel::class)
+                || $user->can('view', AssetModel::class)
+                || $user->can('view', Category::class)
+                || $user->can('view', Manufacturer::class)
+                || $user->can('view', Supplier::class)
+                || $user->can('view', Department::class)
+                || $user->can('view', Location::class)
+                || $user->can('view', Company::class)
+                || $user->can('view', Manufacturer::class)
+                || $user->can('view', CustomField::class)
+                || $user->can('view', CustomFieldset::class)                
+                || $user->can('view', Depreciation::class);
         });
     }
 }

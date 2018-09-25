@@ -85,6 +85,8 @@ class LdapSync extends Command
         }
 
         /* Determine which location to assign users to by default. */
+        $location = NULL;
+
         if ($this->option('location')!='') {
             $location = Location::where('name', '=', $this->option('location'))->first();
             LOG::debug('Location name '.$this->option('location').' passed');
@@ -93,9 +95,8 @@ class LdapSync extends Command
             $location = Location::where('id', '=', $this->option('location_id'))->first();
             LOG::debug('Location ID '.$this->option('location_id').' passed');
             LOG::debug('Importing to '.$location->name.' ('.$location->id.')');
-        } else {
-            $location = NULL;
         }
+
         if (!isset($location)) {
             LOG::debug('That location is invalid or a location was not provided, so no location will be assigned by default.');
         }
@@ -188,8 +189,14 @@ class LdapSync extends Command
 
                 if ($item['ldap_location_override'] == true) {
                     $user->location_id = $item['location_id'];
-                } else if ($location) {
-                    $user->location_id = e($location->id);
+                } elseif ((isset($location)) && (!empty($location))) {
+
+                    if ((is_array($location)) && (array_key_exists('id', $location))) {
+                        $user->location_id = $location['id'];
+                    } elseif (is_object($location)) {
+                        $user->location_id = $location->id;
+                    }
+
                 }
 
                 $user->notes = 'Imported from LDAP';

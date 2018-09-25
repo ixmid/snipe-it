@@ -47,23 +47,13 @@
                 @include ('partials.forms.checkout-selector', ['user_select' => 'true','asset_select' => 'true', 'location_select' => 'true'])
 
                 @include ('partials.forms.edit.user-select', ['translated_name' => trans('general.user'), 'fieldname' => 'assigned_user', 'required'=>'true'])
-            @if ($asset->requireAcceptance())
-                    <div class="form-group">
 
-                        <div class="col-md-8 col-md-offset-3">
-                            <p class="help-block">
-                                Because this asset category requires acceptance,
-                                it cannot be checked out to another asset or to a location.
-                            </p>
-                        </div>
-                    </div>
-            @else
                 <!-- We have to pass unselect here so that we don't default to the asset that's being checked out. We want that asset to be pre-selected everywhere else. -->
                 @include ('partials.forms.edit.asset-select', ['translated_name' => trans('general.asset'), 'fieldname' => 'assigned_asset', 'unselect' => 'true', 'style' => 'display:none;', 'required'=>'true'])
 
                 @include ('partials.forms.edit.location-select', ['translated_name' => trans('general.location'), 'fieldname' => 'assigned_location', 'style' => 'display:none;', 'required'=>'true'])
 
-            @endif
+
 
             <!-- Checkout/Checkin Date -->
             <div class="form-group {{ $errors->has('checkout_at') ? 'error' : '' }}">
@@ -98,7 +88,7 @@
               </div>
             </div>
 
-                @if ($asset->requireAcceptance() || $asset->getEula())
+                @if ($asset->requireAcceptance() || $asset->getEula() || ($snipeSettings->slack_endpoint!=''))
                     <div class="form-group notification-callout">
                         <div class="col-md-8 col-md-offset-3">
                             <div class="callout callout-info">
@@ -112,6 +102,12 @@
                                     @if ($asset->getEula())
                                         <i class="fa fa-envelope"></i>
                                        {{ trans('admin/categories/general.required_eula') }}
+                                        <br>
+                                    @endif
+
+                                    @if ($snipeSettings->slack_endpoint!='')
+                                        <i class="fa fa-slack"></i>
+                                       A slack message will be sent
                                     @endif
                             </div>
                         </div>

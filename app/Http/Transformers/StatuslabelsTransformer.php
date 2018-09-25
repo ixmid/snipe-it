@@ -9,13 +9,13 @@ use App\Helpers\Helper;
 class StatuslabelsTransformer
 {
 
-    public function transformStatuslabels (Collection $statuslabels)
+    public function transformStatuslabels (Collection $statuslabels, $total)
     {
         $array = array();
         foreach ($statuslabels as $statuslabel) {
             $array[] = self::transformStatuslabel($statuslabel);
         }
-        return (new DatatablesTransformer)->transformDatatables($array);
+        return (new DatatablesTransformer)->transformDatatables($array, $total);
     }
 
     public function transformStatuslabel (Statuslabel $statuslabel)
@@ -26,6 +26,7 @@ class StatuslabelsTransformer
             'type' => $statuslabel->getStatuslabelType(),
             'color' => ($statuslabel->color) ? e($statuslabel->color) : null,
             'show_in_nav' => ($statuslabel->show_in_nav=='1') ? true : false,
+            'default_label' => ($statuslabel->default_label =='1') ? true : false,
             'assets_count' => (int) $statuslabel->assets_count,
             'notes' => e($statuslabel->notes),
             'created_at' => Helper::getFormattedDateObject($statuslabel->created_at, 'datetime'),

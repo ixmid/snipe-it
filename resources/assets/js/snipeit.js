@@ -193,6 +193,13 @@ $(document).ready(function () {
 
         link.select2({
 
+            /**
+             * Adds an empty placeholder, allowing every select2 instance to be cleared.
+             * This placeholder can be overridden with the "data-placeholder" attribute.
+             */
+            placeholder: '',
+            allowClear: true,
+            
             ajax: {
 
                 // the baseUrl includes a trailing slash
@@ -206,7 +213,8 @@ $(document).ready(function () {
                 data: function (params) {
                     var data = {
                         search: params.term,
-                        page: params.page || 1
+                        page: params.page || 1,
+                        assetStatusType: link.data("asset-status-type"),
                     };
                     return data;
                 },
@@ -288,7 +296,94 @@ $(document).ready(function () {
             }
         });
     });
-    
+
+
+    // ------------------------------------------------
+    // Deep linking for Bootstrap tabs
+    // ------------------------------------------------
+    var taburl = document.location.toString();
+
+    // Allow full page URL to activate a tab's ID
+    // ------------------------------------------------
+    // This allows linking to a tab on page load via the address bar.
+    // So a URL such as, http://snipe-it.local/hardware/2/#my_tab will
+    // cause the tab on that page with an ID of “my_tab” to be active.
+    if (taburl.match('#') ) {
+        $('.nav-tabs a[href="#'+taburl.split('#')[1]+'"]').tab('show');
+    }
+
+    // Allow internal page links to activate a tab's ID.
+    // ------------------------------------------------
+    // This allows you to link to a tab from anywhere on the page
+    // including from within another tab. Also note that internal page
+    // links either inside or out of the tabs need to include data-toggle="tab"
+    // Ex: <a href="#my_tab" data-toggle="tab">Click me</a>
+    $('a[data-toggle="tab"]').click(function (e) {
+        var href = $(this).attr("href");
+        history.pushState(null, null, href);
+        e.preventDefault();
+        $('a[href="' + $(this).attr('href') + '"]').tab('show');
+    });
+
+    // ------------------------------------------------
+    // End Deep Linking for Bootstrap tabs
+    // ------------------------------------------------
+
+
+
+    // Image preview
+    function readURL(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                $('#imagePreview').attr('src', e.target.result);
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function formatBytes(bytes) {
+        if(bytes < 1024) return bytes + " Bytes";
+        else if(bytes < 1048576) return(bytes / 1024).toFixed(2) + " KB";
+        else if(bytes < 1073741824) return(bytes / 1048576).toFixed(2) + " MB";
+        else return(bytes / 1073741824).toFixed(2) + " GB";
+    };
+
+     // File size validation
+    $('#uploadFile').bind('change', function() {
+        $('#upload-file-status').removeClass('text-success').removeClass('text-danger');
+        $('.goodfile').remove();
+        $('.badfile').remove();
+        $('.badfile').remove();
+        $('.previewSize').hide();
+        $('#upload-file-info').html('');
+
+        var max_size = $('#uploadFile').data('maxsize');
+        var total_size = 0;
+
+        for (var i = 0; i < this.files.length; i++) {
+            total_size += this.files[i].size;
+            $('#upload-file-info').append('<span class="label label-default">' + this.files[i].name + ' (' + formatBytes(this.files[i].size) + ')</span> ');
+        }
+
+        if (total_size > max_size) {
+            $('#upload-file-status').addClass('text-danger').removeClass('help-block').prepend('<i class="badfile fa fa-times"></i> ').append('<span class="previewSize"> Upload is ' + formatBytes(total_size) + '.</span>');
+        } else {
+            $('#upload-file-status').addClass('text-success').removeClass('help-block').prepend('<i class="goodfile fa fa-check"></i> ');
+            readURL(this);
+            $('#imagePreview').fadeIn();
+        }
+
+
+    });
+
+
+
+
+
+
+
+
 
 
 });

@@ -1,6 +1,5 @@
 <script src="{{ asset('js/bootstrap-table.min.js') }}"></script>
 <script src="{{ asset('js/extensions/mobile/bootstrap-table-mobile.js') }}"></script>
-<script src="{{ asset('js/extensions/cookie/bootstrap-table-cookie.min.js?v=1') }}"></script>
 <script src="{{ asset('js/extensions/export/bootstrap-table-export.js?v=1') }}"></script>
 <script src="{{ asset('js/extensions/export/jquery.base64.js') }}"></script>
 <script src="{{ asset('js/FileSaver.min.js') }}"></script>
@@ -15,16 +14,14 @@
 <script src="{{ asset('js/extensions/sticky-header/bootstrap-table-sticky-header.js') }}"></script>
 @endif
 
+<script src="{{ asset('js/extensions/cookie/bootstrap-table-cookie.js?v=1') }}"></script>
+
+
 <script nonce="{{ csrf_token() }}">
-
-    var $table = $('.snipe-table');
-
 
 
     $(function () {
-        buildTable($table, 20, 50);
-    });
-    function buildTable($el) {
+
         var stickyHeaderOffsetY = 0;
 
         if ( $('.navbar-fixed-top').css('height') ) {
@@ -35,7 +32,6 @@
         }
 
 
-
         $('.snipe-table').bootstrapTable('destroy').bootstrapTable({
             classes: 'table table-responsive table-no-bordered',
 
@@ -44,89 +40,43 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 }
             },
+            stickyHeader: true,
+            stickyHeaderOffsetY: stickyHeaderOffsetY + 'px',
+
             undefinedText: '',
             iconsPrefix: 'fa',
-            {!! ((isset($search)) && ($search=='true')) ? 'search: "true",' : '' !!}
-            paginationVAlign: 'both',
-            sidePagination: '{{ (isset($clientSearch)) ? 'client' : 'server' }}',
-            sortable: true,
-            @if (!isset($nopages))
-            pageSize: 20,
-            pagination: true,
-            @endif
             cookie: true,
             cookieExpire: '2y',
             cookieIdTable: '{{ Route::currentRouteName() }}',
-            @if (isset($columns))
-             columns: {!! $columns !!},
-            @endif
             mobileResponsive: true,
             maintainSelected: true,
+            trimOnSearch: false,
             paginationFirstText: "{{ trans('general.first') }}",
             paginationLastText: "{{ trans('general.last') }}",
             paginationPreText: "{{ trans('general.previous') }}",
             paginationNextText: "{{ trans('general.next') }}",
+            pageList: ['10','20', '30','50','100','150','200', '500'],
+            pageSize: {{  (($snipeSettings->per_page!='') && ($snipeSettings->per_page > 0)) ? $snipeSettings->per_page : 20 }},
+            paginationVAlign: 'both',
             formatLoadingMessage: function () {
                 return '<h4><i class="fa fa-spinner fa-spin" aria-hidden="true"></i> Loading... please wait.... </h4>';
             },
+
             icons: {
                 advancedSearchIcon: 'fa fa-search-plus',
                 paginationSwitchDown: 'fa-caret-square-o-down',
                 paginationSwitchUp: 'fa-caret-square-o-up',
                 columns: 'fa-columns',
-                @if (isset($multiSort))
-                sort: 'fa fa-sort-amount-desc',
-                plus: 'fa fa-plus',
-                minus: 'fa fa-minus',
-                @endif
                 refresh: 'fa-refresh'
             },
-            exportDataType: 'all',
             exportTypes: ['csv', 'excel', 'doc', 'txt','json', 'xml', 'pdf'],
-            exportOptions: {
 
-                fileName: '{{ ((isset($exportFile)) ? $exportFile : 'table') }}-' + (new Date()).toISOString().slice(0,10),
-                ignoreColumn: ['actions','image','change','checkbox','checkincheckout','icon'],
-                worksheetName: "Snipe-IT Export",
-                escape: false,
-                jspdf: {
-                    orientation: 'l',
-                    autotable: {
-                        styles: {
-                            rowHeight: 20,
-                            fontSize: 10,
-                            overflow: 'linebreak',
-                        },
-                        headerStyles: {fillColor: 255, textColor: 0},
-                        //alternateRowStyles: {fillColor: [60, 69, 79], textColor: 255}
-                    }
-                }
-            },
-
-            @if (!isset($simple_view))
-
-                showRefresh: true,
-                stickyHeader: true,
-                stickyHeaderOffsetY: stickyHeaderOffsetY + 'px',
-
-                @if (isset($showFooter))
-                showFooter: true,
-                @endif
-
-                showColumns: true,
-                trimOnSearch: false,
-
-                @if (isset($multiSort))
-                showMultiSort: true,
-                @endif
-
-
-
-                @endif
-                pageList: ['20', '30','50','100','150','200']
 
         });
-    }
+
+    });
+
+
 
 
 
@@ -205,7 +155,14 @@
 
                 return '<nobr><a href="{{ url('/') }}/' + destination + '/' + value.id + '" data-tooltip="true" title="'+ status_meta[value.status_meta] + '"> <i class="fa ' + icon_style + ' text-' + text_color + '"></i> ' + value.name + ' ' + text_help + ' </a> </nobr>';
             } else if ((value) && (value.name)) {
-                return '<nobr><a href="{{ url('/') }}/' + destination + '/' + value.id + '"> ' + value.name + '</a></span>';
+
+                // Add some overrides for any funny urls we have
+                var dest = destination;
+                if (destination=='fieldsets') {
+                    var dest = 'fields/fieldsets';
+                }
+
+                return '<nobr><a href="{{ url('/') }}/' + dest + '/' + value.id + '"> ' + value.name + '</a></span>';
             }
         };
     }
@@ -216,9 +173,15 @@
 
             var actions = '<nobr>';
 
+            // Add some overrides for any funny urls we have
             var dest = destination;
+
             if (destination=='groups') {
                 var dest = 'admin/groups';
+            }
+
+            if (destination=='maintenances') {
+                var dest = 'hardware/maintenances';
             }
 
             if ((row.available_actions) && (row.available_actions.clone === true)) {
@@ -300,13 +263,21 @@
     }
 
 
+    // Convert line breaks to <br>
+    function notesFormatter(value) {
+        if (value) {
+            return value.replace(/(?:\r\n|\r|\n)/g, '<br />');;
+        }
+    }
+
+
     // We need a special formatter for license seats, since they don't work exactly the same
     // Checkouts need the license ID, checkins need the specific seat ID
 
     function licenseSeatInOutFormatter(value, row) {
         // The user is allowed to check the license seat out and it's available
         if ((row.available_actions.checkout == true) && (row.user_can_checkout == true) && ((!row.asset_id) && (!row.assigned_to))) {
-            return '<a href="{{ url('/') }}/licenses/' + row.license_id + '/checkout" class="btn btn-sm bg-maroon" data-tooltip="true" title="Check this item out">{{ trans('general.checkout') }}</a>';
+            return '<a href="{{ url('/') }}/licenses/' + row.license_id + '/checkout/'+row.id+'" class="btn btn-sm bg-maroon" data-tooltip="true" title="Check this item out">{{ trans('general.checkout') }}</a>';
         } else {
             return '<a href="{{ url('/') }}/licenses/' + row.id + '/checkin" class="btn btn-sm bg-purple" data-tooltip="true" title="Check in this license seat.">{{ trans('general.checkin') }}</a>';
         }
@@ -340,6 +311,17 @@
     }
 
 
+    // This is only used by the requestable assets section
+    function assetRequestActionsFormatter (row, value) {
+        if (value.available_actions.cancel == true)  {
+            return '<form action="{{ url('/') }}/account/request-asset/'+ value.id + '" method="GET"><button class="btn btn-danger btn-sm" data-tooltip="true" title="Cancel this item request">{{ trans('button.cancel') }}</button></form>';
+        } else if (value.available_actions.request == true)  {
+            return '<form action="{{ url('/') }}/account/request-asset/'+ value.id + '" method="GET"><button class="btn btn-primary btn-sm" data-tooltip="true" title="Request this item">{{ trans('button.request') }}</button></form>';
+        }
+
+    }
+
+
 
     var formatters = [
         'hardware',
@@ -349,6 +331,7 @@
         'locations',
         'users',
         'manufacturers',
+        'maintenances',
         'statuslabels',
         'models',
         'licenses',
@@ -451,7 +434,18 @@
         return '<a href="{{ url('/') }}/admin/groups/' + row.id + '"> ' + value + '</a>';
     }
 
-    function trueFalseFormatter(value, row) {
+    function assetTagLinkFormatter(value, row) {
+        return '<a href="{{ url('/') }}/hardware/' + row.asset.id + '"> ' + row.asset.asset_tag + '</a>';
+    }
+
+    function assetNameLinkFormatter(value, row) {
+        if ((row.asset) && (row.asset.name)) {
+            return '<a href="{{ url('/') }}/hardware/' + row.asset.id + '"> ' + row.asset.name + '</a>';
+        }
+
+    }
+
+    function trueFalseFormatter(value) {
         if ((value) && ((value == 'true') || (value == '1'))) {
             return '<i class="fa fa-check text-success"></i>';
         } else {
@@ -459,25 +453,25 @@
         }
     }
 
-    function dateDisplayFormatter(value, row) {
+    function dateDisplayFormatter(value) {
         if (value) {
             return  value.formatted;
         }
     }
 
-    function iconFormatter(value, row) {
+    function iconFormatter(value) {
         if (value) {
-            return '<i class="' + value + '"></i>';
+            return '<i class="' + value + '  icon-med"></i>';
         }
     }
 
-    function emailFormatter(value, row) {
+    function emailFormatter(value) {
         if (value) {
             return '<a href="mailto:' + value + '"> ' + value + '</a>';
         }
     }
 
-    function linkFormatter(value, row) {
+    function linkFormatter(value) {
         if (value) {
             return '<a href="' + value + '"> ' + value + '</a>';
         }
@@ -517,18 +511,37 @@
     }
 
 
-   function imageFormatter(value, row) {
+   function imageFormatter(value) {
         if (value) {
             return '<a href="' + value + '" data-toggle="lightbox" data-type="image"><img src="' + value + '" style="max-height: {{ $snipeSettings->thumbnail_max_h }}px; width: auto;" class="img-responsive"></a>';
         }
     }
 
+    function fileUploadFormatter(value) {
+        if ((value) && (value.url) && (value.inlineable)) {
+            return '<a href="' + value.url + '" data-toggle="lightbox" data-type="image"><img src="' + value.url + '" style="max-height: {{ $snipeSettings->thumbnail_max_h }}px; width: auto;" class="img-responsive"></a>';
+        } else if ((value) && (value.url)) {
+            return '<a href="' + value.url + '" class="btn btn-default"><i class="fa fa-download"></i></a>';
+        }
+    }
+
+
+    function fileUploadNameFormatter(value) {
+        console.dir(value);
+        if ((value) && (value.filename) && (value.url)) {
+            return '<a href="' + value.url + '">' + value.filename + '</a>';
+        }
+    }
+
     function sumFormatter(data) {
-        var field = this.field;
-        var total_sum = data.reduce(function(sum, row) {
-            return (sum) + (parseFloat(row[field]) || 0);
-        }, 0);
-        return total_sum.toFixed(2);
+        if (Array.isArray(data)) {
+            var field = this.field;
+            var total_sum = data.reduce(function(sum, row) {
+                return (sum) + (parseFloat(row[field]) || 0);
+            }, 0);
+            return total_sum.toFixed(2);
+        }
+        return 'not an array';
     }
 
 

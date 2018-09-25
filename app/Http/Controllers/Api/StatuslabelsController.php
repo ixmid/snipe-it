@@ -22,7 +22,7 @@ class StatuslabelsController extends Controller
     public function index(Request $request)
     {
         $this->authorize('view', Statuslabel::class);
-        $allowed_columns = ['id','name','created_at', 'assets_count'];
+        $allowed_columns = ['id','name','created_at', 'assets_count','color','default_label'];
 
         $statuslabels = Statuslabel::withCount('assets');
 
@@ -56,7 +56,7 @@ class StatuslabelsController extends Controller
         $request->except('deployable', 'pending','archived');
 
         if (!$request->has('type')) {
-            return response()->json(Helper::formatStandardApiResponse('error', null, ["type" => ["Status label type is required."]]));
+            return response()->json(Helper::formatStandardApiResponse('error', null, ["type" => ["Status label type is required."]]),500);
         }
 
         $statuslabel = new Statuslabel;
@@ -101,7 +101,7 @@ class StatuslabelsController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->authorize('edit', Statuslabel::class);
+        $this->authorize('update', Statuslabel::class);
         $statuslabel = Statuslabel::findOrFail($id);
         
         $request->except('deployable', 'pending','archived');
@@ -160,6 +160,7 @@ class StatuslabelsController extends Controller
 
     public function getAssetCountByStatuslabel()
     {
+        $this->authorize('view', Statuslabel::class);
 
         $statuslabels = Statuslabel::with('assets')->groupBy('id')->withCount('assets')->get();
 
@@ -237,6 +238,9 @@ class StatuslabelsController extends Controller
      */
     public function checkIfDeployable($id) {
         $statuslabel = Statuslabel::findOrFail($id);
+
+        $this->authorize('view', $statuslabel);
+
         if ($statuslabel->getStatuslabelType()=='deployable') {
             return '1';
         }

@@ -2,7 +2,8 @@
 
 
 return array(
-
+    'activated_help_text' => 'This user can login',
+    'activated_disabled_help_text' => 'You cannot edit activation status for your own account.',
     'assets_user'       => 'Sócmhainní a shanntar do: ainm',
     'bulk_update_warn'	=> 'Tá tú ar tí in eagar na hairíonna seo a leanas: úsáideoirí user_count. Tabhair faoi deara nach féidir leat tréithe úsáideora féin a athrú ag baint úsáide as an bhfoirm seo, agus ní mór duit athruithe a dhéanamh chuig d\'úsáideoir féin ina n-aonar.',
     'bulk_update_help'	=> 'Ceadaíonn an fhoirm seo duit il-úsáideoirí a thabhairt cothrom le dáta ag an am céanna. Líon isteach na réimsí is gá duit a athrú ach amháin. Ní dhéanfar aon réimsí fágtha gan athrú.',
@@ -16,6 +17,7 @@ return array(
     'restore_user'		=> 'Cliceáil anseo chun iad a athchóiriú.',
     'last_login'        => 'Logáil isteach deireanach',
     'ldap_config_text'  => 'Is féidir suímh chumraíochta LDAP a fháil Admin> Settings. Socrófar an suíomh roghnaithe (roghnach) do gach úsáideoir a allmhairítear.',
+    'print_assigned'    => 'Print All Assigned',
     'software_user'     => 'Bogearraí Seiceáil amach chuig: ainm',
     'view_user'         => 'Féach Úsáideoir: ainm',
     'usercsv'           => 'Comhad CSV',

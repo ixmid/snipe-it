@@ -38,6 +38,7 @@ return array(
     'tag'				=> 'ترميز الأصل',
     'update'			=> 'تحديث الأصل',
     'warranty'			=> 'الضمان',
+		'warranty_expires'		=> 'انتهاء مدة صلاحية الضمان',
     'years'				=> 'سنوات',
 )
 ;

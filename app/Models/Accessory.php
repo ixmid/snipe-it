@@ -1,9 +1,12 @@
 <?php
 namespace App\Models;
 
+use App\Models\Traits\Searchable;
 use App\Presenters\Presentable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Watson\Validating\ValidatingTrait;
+use App\Notifications\CheckinAccessoryNotification;
+use App\Notifications\CheckoutAccessoryNotification;
 
 /**
  * Model for Accessories.
@@ -22,6 +25,35 @@ class Accessory extends SnipeModel
     protected $casts = [
         'requestable' => 'boolean'
     ];
+
+    use Searchable;
+    
+    /**
+     * The attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableAttributes = ['name', 'model_number', 'order_number', 'purchase_date'];
+
+    /**
+     * The relations and their attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableRelations = [
+        'category'     => ['name'],
+        'company'      => ['name'],
+        'manufacturer' => ['name'],
+        'supplier'     => ['name'],
+        'location'     => ['name']
+    ];
+   
+    /**
+     * Set static properties to determine which checkout/checkin handlers we should use
+     */
+    public static $checkoutClass = CheckoutAccessoryNotification::class;
+    public static $checkinClass = CheckinAccessoryNotification::class;
+
 
     /**
     * Accessory validation rules
@@ -68,6 +100,8 @@ class Accessory extends SnipeModel
     ];
 
 
+
+
     public function supplier()
     {
         return $this->belongsTo('\App\Models\Supplier', 'supplier_id');
@@ -106,6 +140,13 @@ class Accessory extends SnipeModel
         return $this->hasMany('\App\Models\Actionlog', 'item_id')->where('item_type', Accessory::class)->orderBy('created_at', 'desc')->withTrashed();
     }
 
+    public function getImageUrl() {
+        if ($this->image) {
+            return url('/').'/uploads/accessories/'.$this->image;
+        }
+        return false;
+
+    }
 
     public function users()
     {
@@ -151,39 +192,6 @@ class Accessory extends SnipeModel
         $total = $this->qty;
         $remaining = $total - $checkedout;
         return $remaining;
-    }
-
-    /**
-    * Query builder scope to search on text
-    *
-    * @param  \Illuminate\Database\Query\Builder  $query  Query builder instance
-    * @param  text                              $search      Search term
-    *
-    * @return \Illuminate\Database\Query\Builder          Modified query builder
-    */
-    public function scopeTextSearch($query, $search)
-    {
-        $search = explode('+', $search);
-
-        return $query->where(function ($query) use ($search) {
-
-            foreach ($search as $search) {
-                    $query->whereHas('category', function ($query) use ($search) {
-                        $query->where('categories.name', 'LIKE', '%'.$search.'%');
-                    })->orWhere(function ($query) use ($search) {
-                        $query->whereHas('company', function ($query) use ($search) {
-                            $query->where('companies.name', 'LIKE', '%'.$search.'%');
-                        });
-                    })->orWhere(function ($query) use ($search) {
-                        $query->whereHas('location', function ($query) use ($search) {
-                            $query->where('locations.name', 'LIKE', '%'.$search.'%');
-                        });
-                    })->orWhere('accessories.name', 'LIKE', '%'.$search.'%')
-                            ->orWhere('accessories.model_number', 'LIKE', '%'.$search.'%')
-                            ->orWhere('accessories.order_number', 'LIKE', '%'.$search.'%')
-                            ->orWhere('accessories.purchase_cost', '=', $search);
-            }
-        });
     }
 
     /**

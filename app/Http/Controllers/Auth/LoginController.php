@@ -50,17 +50,42 @@ class LoginController extends Controller
         \Session::put('backUrl', \URL::previous());
     }
 
-
-    function showLoginForm()
+    function showLoginForm(Request $request)
     {
+        $this->loginViaRemoteUser($request);
         if (Auth::check()) {
             return redirect()->intended('dashboard');
         }
+
+        if (Setting::getSettings()->login_common_disabled == "1") {
+            return view('errors.403');
+        }
+
         return view('auth.login');
     }
 
+    private function loginViaRemoteUser(Request $request)
+    {
+        $remote_user = $request->server('REMOTE_USER');
+        if (Setting::getSettings()->login_remote_user_enabled == "1" && isset($remote_user) && !empty($remote_user)) {
+            LOG::debug("Authenticatiing via REMOTE_USER.");
 
-    private function login_via_ldap(Request $request)
+            $pos = strpos($remote_user, '\\');
+            if ($pos > 0) {
+                $remote_user = substr($remote_user, $pos + 1);
+            };
+            
+            try {
+                $user = User::where('username', '=', $remote_user)->whereNull('deleted_at')->where('activated', '=', '1')->first();
+                LOG::debug("Remote user auth lookup complete");
+                if(!is_null($user)) Auth::login($user, true);
+            } catch(Exception $e) {
+                LOG::error("There was an error authenticating the Remote user: " . $e->getMessage());
+            }
+        }
+    }
+
+    private function loginViaLdap(Request $request)
     {
         LOG::debug("Binding user to LDAP.");
         $ldap_user = Ldap::findAndBindUserLdap($request->input('username'), $request->input('password'));
@@ -72,7 +97,7 @@ class LoginController extends Controller
         }
 
         // Check if the user already exists in the database and was imported via LDAP
-        $user = User::where('username', '=', Input::get('username'))->whereNull('deleted_at')->where('ldap_import', '=', 1)->first();
+        $user = User::where('username', '=', Input::get('username'))->whereNull('deleted_at')->where('ldap_import', '=', 1)->where('activated', '=', '1')->first();
         LOG::debug("Local auth lookup complete");
 
         // The user does not exist in the database. Try to get them from LDAP.
@@ -114,6 +139,10 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
+        if (Setting::getSettings()->login_common_disabled == "1") {
+            return view('errors.403');
+        }
+
         $validator = $this->validator(Input::all());
 
         if ($validator->fails()) {
@@ -134,7 +163,7 @@ class LoginController extends Controller
         if (Setting::getSettings()->ldap_enabled=='1') {
             LOG::debug("LDAP is enabled.");
             try {
-                $user = $this->login_via_ldap($request);
+                $user = $this->loginViaLdap($request);
                 Auth::login($user, true);
 
             // If the user was unable to login via LDAP, log the error and let them fall through to
@@ -148,7 +177,7 @@ class LoginController extends Controller
         if (!$user) {
             LOG::debug("Authenticating user against database.");
           // Try to log the user in
-            if (!Auth::attempt(Input::only('username', 'password'), Input::get('remember-me', 0))) {
+            if (!Auth::attempt(['username' => $request->input('username'), 'password' => $request->input('password'), 'activated' => 1], $request->input('remember'))) {
 
                 if (!$lockedOut) {
                     $this->incrementLoginAttempts($request);
@@ -252,7 +281,15 @@ class LoginController extends Controller
     public function logout(Request $request)
     {
         $request->session()->forget('2fa_authed');
+
         Auth::logout();
+
+        $settings = Setting::getSettings();
+        $customLogoutUrl = $settings->login_remote_user_custom_logout_url ;
+        if ($settings->login_remote_user_enabled == '1' && $customLogoutUrl != '') {
+            return redirect()->away($customLogoutUrl);
+        }
+
         return redirect()->route('login')->with('success', 'You have successfully logged out!');
     }
 

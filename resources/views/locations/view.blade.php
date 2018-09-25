@@ -28,17 +28,27 @@
     </div>
       <div class="box-body">
             <div class="table table-responsive">
-              <table
-              name="location_users"
-              id="location_usersDetailTable"
-              class="table table-striped snipe-table"
-              data-url="{{route('api.users.index', ['location_id' => $location->id])}}"
-              data-cookie="true"
-              data-click-to-select="true"
-              data-cookie-id-table="location_usersDetailTable"
-              data-columns="{{ \App\Presenters\UserPresenter::dataTableLayout() }}">
 
-              </table>
+                <table
+                        data-columns="{{ \App\Presenters\UserPresenter::dataTableLayout() }}"
+                        data-cookie-id-table="usersTable"
+                        data-pagination="true"
+                        data-id-table="usersTable"
+                        data-search="true"
+                        data-side-pagination="server"
+                        data-show-columns="true"
+                        data-show-export="true"
+                        data-show-refresh="true"
+                        data-sort-order="asc"
+                        id="usersTable"
+                        class="table table-striped snipe-table"
+                        data-url="{{route('api.users.index', ['location_id' => $location->id])}}"
+                        data-export-options='{
+                              "fileName": "export-locations-{{ str_slug($location->name) }}-users-{{ date('Y-m-d') }}",
+                              "ignoreColumn": ["actions","image","change","checkbox","checkincheckout","icon"]
+                              }'>
+
+                </table>
             </div><!-- /.table-responsive -->
           </div><!-- /.box-body -->
         </div> <!--/.box-->
@@ -51,18 +61,65 @@
         </div>
         <div class="box-body">
               <div class="table table-responsive">
-                <table
-                        name="location_assets"
-                        id="location_assetsDetailTable"
-                        data-url="{{route('api.assets.index', ['location_id' => $location->id]) }}"
-                        class="table table-striped snipe-table"
-                        data-show-footer="true"
-                        data-cookie-id-table="location_assetsDetailTable"
-                        data-columns="{{ \App\Presenters\AssetPresenter::dataTableLayout() }}">
-                </table>
+
+                  <table
+                          data-columns="{{ \App\Presenters\AssetPresenter::dataTableLayout() }}"
+                          data-cookie-id-table="assetsListingTable"
+                          data-pagination="true"
+                          data-id-table="assetsListingTable"
+                          data-search="true"
+                          data-side-pagination="server"
+                          data-show-columns="true"
+                          data-show-export="true"
+                          data-show-refresh="true"
+                          data-sort-order="asc"
+                          id="assetsListingTable"
+                          class="table table-striped snipe-table"
+                          data-url="{{route('api.assets.index', ['location_id' => $location->id]) }}"
+                          data-export-options='{
+                              "fileName": "export-locations-{{ str_slug($location->name) }}-assets-{{ date('Y-m-d') }}",
+                              "ignoreColumn": ["actions","image","change","checkbox","checkincheckout","icon"]
+                              }'>
+                  </table>
+
               </div><!-- /.table-responsive -->
             </div><!-- /.box-body -->
           </div> <!--/.box-->
+
+
+      <div class="box box-default">
+          <div class="box-header with-border">
+              <div class="box-heading">
+                  <h3 class="box-title">{{ trans('general.components') }}</h3>
+              </div>
+          </div>
+          <div class="box-body">
+              <div class="table table-responsive">
+
+                  <table
+                          data-columns="{{ \App\Presenters\ComponentPresenter::dataTableLayout() }}"
+                          data-cookie-id-table="componentsTable"
+                          data-pagination="true"
+                          data-id-table="componentsTable"
+                          data-search="true"
+                          data-side-pagination="server"
+                          data-show-columns="true"
+                          data-show-export="true"
+                          data-show-refresh="true"
+                          data-sort-order="asc"
+                          id="componentsTable"
+                          class="table table-striped snipe-table"
+                          data-url="{{route('api.components.index', ['location_id' => $location->id])}}"
+                          data-export-options='{
+                              "fileName": "export-locations-{{ str_slug($location->name) }}-components-{{ date('Y-m-d') }}",
+                              "ignoreColumn": ["actions","image","change","checkbox","checkincheckout","icon"]
+                              }'>
+
+                  </table>
+              </div><!-- /.table-responsive -->
+          </div><!-- /.box-body -->
+      </div> <!--/.box-->
+
 
   </div><!--/.col-md-9-->
 

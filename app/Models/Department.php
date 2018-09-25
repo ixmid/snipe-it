@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Http\Traits\UniqueUndeletedTrait;
+use App\Models\Traits\Searchable;
 use Illuminate\Database\Eloquent\Model;
 use Log;
 use Watson\Validating\ValidatingTrait;
@@ -45,6 +46,22 @@ class Department extends SnipeModel
         'notes',
     ];
 
+    use Searchable;
+    
+    /**
+     * The attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableAttributes = ['name', 'notes'];
+
+    /**
+     * The relations and their attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableRelations = [];    
+
 
     public function company()
     {
@@ -76,21 +93,31 @@ class Department extends SnipeModel
     {
         return $this->belongsTo('\App\Models\Location', 'location_id');
     }
-
+    
+    /**
+     * Query builder scope to order on location name
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query  Query builder instance
+     * @param  text                              $order       Order
+     *
+     * @return \Illuminate\Database\Query\Builder          Modified query builder
+     */
+    public function scopeOrderLocation($query, $order)
+    {
+        return $query->leftJoin('locations as department_location', 'departments.location_id', '=', 'department_location.id')->orderBy('department_location.name', $order);
+    }
 
     /**
-     * Query builder scope to search on text
+     * Query builder scope to order on manager name
      *
-     * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-     * @param  text                              $search      Search term
+     * @param  \Illuminate\Database\Query\Builder  $query  Query builder instance
+     * @param  text                              $order       Order
      *
-     * @return Illuminate\Database\Query\Builder          Modified query builder
+     * @return \Illuminate\Database\Query\Builder          Modified query builder
      */
-    public function scopeTextsearch($query, $search)
+    public function scopeOrderManager($query, $order)
     {
-        return $query->where('name', 'LIKE', "%$search%")
-            ->orWhere('notes', 'LIKE', "%$search%");
-
+        return $query->leftJoin('users as department_user', 'departments.manager_id', '=', 'department_user.id')->orderBy('department_user.first_name', $order)->orderBy('department_user.last_name', $order);
     }
 
 

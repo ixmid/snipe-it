@@ -20,7 +20,7 @@ class GroupsController extends Controller
     public function index(Request $request)
     {
         $this->authorize('view', Group::class);
-        $allowed_columns = ['id','name','created_at'];
+        $allowed_columns = ['id','name','created_at', 'users_count'];
 
         $groups = Group::select('id','name','permissions','created_at','updated_at')->withCount('users');
 
@@ -88,7 +88,7 @@ class GroupsController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->authorize('edit', Group::class);
+        $this->authorize('update', Group::class);
         $group = Group::findOrFail($id);
         $group->fill($request->all());
 

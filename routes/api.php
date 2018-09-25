@@ -16,8 +16,24 @@ use Illuminate\Http\Request;
 
 Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
 
-    /*--- Accessories API ---*/
+    Route::group(['prefix' => 'account'], function () {
+        Route::get('requestable/hardware',
+            [
+                'as' => 'api.assets.requestable',
+                'uses' => 'AssetsController@requestable'
+            ]
+        );
 
+        Route::get('requests',
+            [
+                'as' => 'api.assets.requested',
+                'uses' => 'ProfileController@requestedAssets'
+            ]
+        );
+
+    });
+
+    /*--- Accessories API ---*/
     Route::resource('accessories', 'AccessoriesController',
         ['names' =>
             [
@@ -243,6 +259,12 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
                 'uses' => 'CustomFieldsetsController@fields'
             ]
         );
+        Route::get('/{fieldset}/fields/{model}',
+            [
+                'as' => 'api.fieldsets.fields-with-default-value',
+                'uses' => 'CustomFieldsetsController@fieldsWithDefaultValues'
+            ]
+        );
     });
 
     Route::resource('fieldsets', 'CustomFieldsetsController',
@@ -282,6 +304,17 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
     /*--- Hardware API ---*/
 
     Route::group(['prefix' => 'hardware'], function () {
+
+        Route::get( 'bytag/{tag}',  [
+            'as' => 'assets.show.bytag',
+            'uses' => 'AssetsController@showByTag'
+        ]);
+
+        Route::get( 'byserial/{serial}',  [
+            'as' => 'assets.show.byserial',
+            'uses' => 'AssetsController@showBySerial'
+        ]);
+
 
         Route::get( 'selectlist',  [
             'as' => 'assets.selectlist',
@@ -527,6 +560,11 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
         'uses' => 'SettingsController@ldaptestlogin'
     ]);
 
+    Route::post('settings/slacktest', [
+        'as' => 'api.settings.slacktest',
+        'uses' => 'SettingsController@slacktest'
+    ]);
+
     Route::post(
         'settings/mailtest',
         [
@@ -636,16 +674,23 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
 
 
 
+
     /*--- Users API ---*/
 
-
-
+    
     Route::group([ 'prefix' => 'users' ], function () {
 
         Route::post('two_factor_reset',
             [
                 'as' => 'api.users.two_factor_reset',
                 'uses' => 'UsersController@postTwoFactorReset'
+            ]
+        );
+
+        Route::get('me',
+            [
+                'as' => 'api.users.me',
+                'uses' => 'UsersController@getCurrentUserInfo'
             ]
         );
 
@@ -698,6 +743,7 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
         'reports/activity',
         [ 'as' => 'api.activity.index', 'uses' => 'ReportsController@index' ]
     );
+
 
 
 });

@@ -1,9 +1,11 @@
 <?php
 namespace App\Models;
 
+use App\Models\Traits\Searchable;
 use App\Presenters\Presentable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Watson\Validating\ValidatingTrait;
+use App\Notifications\CheckoutConsumableNotification;
 
 class Consumable extends SnipeModel
 {
@@ -18,6 +20,11 @@ class Consumable extends SnipeModel
         'requestable' => 'boolean'
     ];
 
+    /**
+     * Set static properties to determine which checkout/checkin handlers we should use
+     */
+    public static $checkoutClass = CheckoutConsumableNotification::class;
+    public static $checkinClass = null;
 
 
     /**
@@ -50,15 +57,38 @@ class Consumable extends SnipeModel
     protected $fillable = [
         'category_id',
         'company_id',
+        'item_no',
         'location_id',
         'manufacturer_id',
         'name',
         'order_number',
+        'model_number',
         'purchase_cost',
         'purchase_date',
         'qty',
         'requestable'
     ];
+
+    use Searchable;
+    
+    /**
+     * The attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableAttributes = ['name', 'order_number', 'purchase_cost', 'purchase_date'];
+
+    /**
+     * The relations and their attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableRelations = [
+        'category'     => ['name'],
+        'company'      => ['name'],
+        'location'     => ['name'],  
+        'manufacturer' => ['name'],
+    ];     
 
     public function setRequestableAttribute($value)
     {
@@ -107,6 +137,14 @@ class Consumable extends SnipeModel
         return $this->hasMany('\App\Models\Actionlog', 'item_id')->where('item_type', Consumable::class)->orderBy('created_at', 'desc')->withTrashed();
     }
 
+    public function getImageUrl() {
+        if ($this->image) {
+            return url('/').'/uploads/consumables/'.$this->image;
+        }
+        return false;
+
+    }
+
 
     public function users()
     {
@@ -118,6 +156,10 @@ class Consumable extends SnipeModel
         return $this->belongsToMany('\App\Models\User', 'consumables_users', 'consumable_id', 'assigned_to')->count();
     }
 
+    public function checkin_email()
+    {
+        return $this->category->checkin_email;
+    }    
 
     public function requireAcceptance()
     {
@@ -145,50 +187,6 @@ class Consumable extends SnipeModel
         $total = $this->qty;
         $remaining = $total - $checkedout;
         return $remaining;
-    }
-
-    /**
-    * Query builder scope to search on text
-    *
-    * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-    * @param  text                              $search      Search term
-    *
-    * @return Illuminate\Database\Query\Builder          Modified query builder
-    */
-    /**
-    * Query builder scope to search on text
-    *
-    * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-    * @param  text                              $search      Search term
-    *
-    * @return Illuminate\Database\Query\Builder          Modified query builder
-    */
-    public function scopeTextSearch($query, $search)
-    {
-        $search = explode(' ', $search);
-
-        return $query->where(function ($query) use ($search) {
-        
-            foreach ($search as $search) {
-                    $query->whereHas('category', function ($query) use ($search) {
-                        $query->where('categories.name', 'LIKE', '%'.$search.'%');
-                    })->orWhere(function ($query) use ($search) {
-                        $query->whereHas('company', function ($query) use ($search) {
-                            $query->where('companies.name', 'LIKE', '%'.$search.'%');
-                        });
-                    })->orWhere(function ($query) use ($search) {
-                        $query->whereHas('location', function ($query) use ($search) {
-                            $query->where('locations.name', 'LIKE', '%'.$search.'%');
-                        });
-                    })->orWhere(function ($query) use ($search) {
-                        $query->whereHas('manufacturer', function ($query) use ($search) {
-                            $query->where('manufacturers.name', 'LIKE', '%'.$search.'%');
-                        });
-                    })->orWhere('consumables.name', 'LIKE', '%'.$search.'%')
-                            ->orWhere('consumables.order_number', 'LIKE', '%'.$search.'%')
-                            ->orWhere('consumables.purchase_cost', 'LIKE', '%'.$search.'%');
-            }
-        });
     }
 
     /**

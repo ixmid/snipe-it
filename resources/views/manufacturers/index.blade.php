@@ -12,6 +12,14 @@
     <a href="{{ route('manufacturers.create') }}" class="btn btn-primary pull-right">
     {{ trans('general.create') }}</a>
   @endcan
+
+  @if (Input::get('deleted')=='true')
+    <a class="btn btn-default pull-right" href="{{ route('manufacturers.index') }}" style="margin-right: 5px;">{{ trans('general.show_current') }}</a>
+  @else
+    <a class="btn btn-default pull-right" href="{{ route('manufacturers.index', ['deleted' => 'true']) }}" style="margin-right: 5px;">
+      {{ trans('general.show_deleted') }}</a>
+  @endif
+
 @stop
 
 {{-- Page content --}}
@@ -22,15 +30,26 @@
     <div class="box box-default">
       <div class="box-body">
         <div class="table-responsive">
+
           <table
-          name="manufacturers"
-          class="table table-striped snipe-table"
-          id="manufacturersTable"
-          data-url="{{route('api.manufacturers.index') }}"
-          data-cookie="true"
-          data-show-export="true"
-          data-click-to-select="true"
-          data-cookie-id-table="manufacturersTable">
+            data-columns="{{ \App\Presenters\ManufacturerPresenter::dataTableLayout() }}"
+            data-cookie-id-table="manufacturersTable"
+            data-pagination="true"
+            data-id-table="manufacturersTable"
+            data-search="true"
+            data-show-footer="true"
+            data-side-pagination="server"
+            data-show-columns="true"
+            data-show-export="true"
+            data-show-refresh="true"
+            data-sort-order="asc"
+            id="manufacturersTable"
+            class="table table-striped snipe-table"
+            data-url="{{route('api.manufacturers.index', ['deleted' => e(Input::get('deleted')) ]) }}"
+            data-export-options='{
+              "fileName": "export-manufacturers-{{ date('Y-m-d') }}",
+              "ignoreColumn": ["actions","image","change","checkbox","checkincheckout","icon"]
+              }'>
 
           </table>
         </div>
@@ -42,9 +61,5 @@
 @stop
 
 @section('moar_scripts')
-  @include ('partials.bootstrap-table',
-      ['exportFile' => 'manufacturers-export',
-      'search' => true,
-      'columns' => \App\Presenters\ManufacturerPresenter::dataTableLayout()
-  ])
+  @include ('partials.bootstrap-table')
 @stop

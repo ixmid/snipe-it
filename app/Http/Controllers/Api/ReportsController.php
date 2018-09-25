@@ -18,7 +18,8 @@ class ReportsController extends Controller
      */
     public function index(Request $request)
     {
-
+        $this->authorize('reports.view');
+        
         $actionlogs = Actionlog::with('item', 'user', 'target','location');
 
         if ($request->has('search')) {
@@ -28,7 +29,6 @@ class ReportsController extends Controller
         if (($request->has('target_type'))  && ($request->has('target_id'))) {
             $actionlogs = $actionlogs->where('target_id','=',$request->input('target_id'))
                 ->where('target_type','=',"App\\Models\\".ucwords($request->input('target_type')));
-
         }
 
         if (($request->has('item_type'))  && ($request->has('item_id'))) {
@@ -40,9 +40,17 @@ class ReportsController extends Controller
             $actionlogs = $actionlogs->where('action_type','=',$request->input('action_type'))->orderBy('created_at', 'desc');
         }
 
+        if ($request->has('uploads')) {
+            $actionlogs = $actionlogs->whereNotNull('filename')->orderBy('created_at', 'desc');
+        }
+
         $allowed_columns = [
             'id',
-            'created_at'
+            'created_at',
+            'target_id',
+            'user_id',
+            'action_type',
+            'note'
         ];
         
         $sort = in_array($request->input('sort'), $allowed_columns) ? e($request->input('sort')) : 'created_at';

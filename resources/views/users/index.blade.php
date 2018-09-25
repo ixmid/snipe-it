@@ -18,7 +18,6 @@
       @if ($snipeSettings->ldap_enabled == 1)
       <a href="{{ route('ldap/user') }}" class="btn btn-default pull-right"><span class="fa fa-sitemap"></span> LDAP Sync</a>
       @endif
-      <a href="{{ route('import/user') }}" class="btn btn-default pull-right" style="margin-right: 5px;"><span class="fa fa-upload"></span> {{ trans('general.import') }}</a>
       <a href="{{ route('users.create') }}" class="btn btn-primary pull-right" style="margin-right: 5px;">  {{ trans('general.create') }}</a>
     @endcan
 
@@ -57,21 +56,30 @@
               @endcan
             @endif
 
-             <table
-              name="users"
-              data-toolbar="#toolbar"
-              data-toggle="table"
-              data-sort-order="name"
-              data-sort-order="asc"
-              class="table table-striped snipe-table"
-              id="table"
-              data-url="{{ route('api.users.index',
-              array('deleted'=> (Input::get('status')=='deleted') ? 'true' : 'false','company_id'=>e(Input::get('company_id')))) }}"
-              data-cookie="true"
-              data-click-to-select="true"
-              data-cookie-id-table="userTableDisplay-{{ config('version.hash_version') }}">
 
-             </table>
+            <table
+                    data-click-to-select="true"
+                    data-columns="{{ \App\Presenters\UserPresenter::dataTableLayout() }}"
+                    data-cookie-id-table="usersTable"
+                    data-pagination="true"
+                    data-id-table="usersTable"
+                    data-search="true"
+                    data-side-pagination="server"
+                    data-show-columns="true"
+                    data-show-export="true"
+                    data-show-refresh="true"
+                    data-sort-order="asc"
+                    data-toolbar="#toolbar"
+                    id="usersTable"
+                    class="table table-striped snipe-table"
+                    data-url="{{ route('api.users.index',
+              array('deleted'=> (Input::get('status')=='deleted') ? 'true' : 'false','company_id'=>e(Input::get('company_id')))) }}"
+                    data-export-options='{
+                "fileName": "export-users-{{ date('Y-m-d') }}",
+                "ignoreColumn": ["actions","image","change","checkbox","checkincheckout","icon"]
+                }'>
+            </table>
+
 
           {{ Form::close() }}
         </div><!-- /.box-body -->
@@ -82,11 +90,7 @@
 @stop
 
 @section('moar_scripts')
-@include ('partials.bootstrap-table',
-    ['exportFile' => 'users-export',
-    'search' => true,
-    'columns' => \App\Presenters\UserPresenter::dataTableLayout()
-])
+@include ('partials.bootstrap-table')
 
 
 @stop

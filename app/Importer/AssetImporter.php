@@ -31,9 +31,8 @@ class AssetImporter extends ItemImporter
                     $this->item['custom_fields'][$customField->db_column_name()] = $customFieldValue;
                     $this->log('Custom Field '. $customField->name.': '.$customFieldValue);
                 } else {
-                    // This removes custom fields when updating if the column doesn't exist in file.
-                    // Commented out becausee not sure if it's needed anywhere.
-                    // $this->item['custom_fields'][$customField->db_column_name()] = '';
+                    // Clear out previous data.
+                    $this->item['custom_fields'][$customField->db_column_name()] = null;
                 }
             }
         }
@@ -82,8 +81,8 @@ class AssetImporter extends ItemImporter
 
         // We need to save the user if it exists so that we can checkout to user later.
         // Sanitizing the item will remove it.
-        if(array_key_exists('user', $this->item)) {
-            $user = $this->item['user'];
+        if(array_key_exists('checkout_target', $this->item)) {
+            $target = $this->item['checkout_target'];
         }
         $item = $this->sanitizeItemForStoring($asset, $editingAsset);
         // The location id fetched by the csv reader is actually the rtd_location_id.
@@ -106,15 +105,16 @@ class AssetImporter extends ItemImporter
                 $asset->{$custom_field} = $val;
             }
         }
+
         //FIXME: this disables model validation.  Need to find a way to avoid double-logs without breaking everything.
         // $asset->unsetEventDispatcher();
         if ($asset->save()) {
             $asset->logCreate('Imported using csv importer');
             $this->log('Asset ' . $this->item["name"] . ' with serial number ' . $this->item['serial'] . ' was created');
 
-            // If we have a user to checkout to, lets do so.
-            if(isset($user)) {
-                $asset->fresh()->checkOut($user);
+            // If we have a target to checkout to, lets do so.
+            if(isset($target)) {
+                $asset->fresh()->checkOut($target);
             }
             return;
         }
