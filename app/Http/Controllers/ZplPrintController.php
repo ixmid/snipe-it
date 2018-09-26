@@ -77,11 +77,11 @@ class ZplPrintController extends Controller
     * @param array $asset_raw_array
     * @return array
     **/
-    private function getAssetIdsFromBulkEdit($asset_raw_array = array())
+    private function getAssetIdsFromBulkEdit($assets = array())
     {
         $asset_ids = [];
-        foreach ($asset_raw_array as $asset_id => $value) {
-            $asset_ids[] = $asset_id;
+        foreach ($assets as $asset) {
+            $asset_ids[] = $asset->id;
         }
         return $asset_ids;
     }
@@ -91,18 +91,20 @@ class ZplPrintController extends Controller
     *
     * @return View
     **/
-    public function processLabelsFromBulkEdit($assets = null)
+    public function processLabelsFromBulkEdit(Request $request = null)
     {
         $asset_ids = [];
 
         if (!Company::isCurrentUserAuthorized()) {
             return redirect()->to('hardware')->with('error', \Lang::get('general.insufficient_permissions'));
-        } elseif (!Input::has('ids')) {
-            return redirect()->back()->with('error', 'No assets selected');
-        } else {
-            $raw_assets = Input::get('ids');
-            $asset_ids = $this->getAssetIdsFromBulkEdit($raw_assets);
         }
+
+        if (!$request->has('ids')) {
+            return redirect()->back()->with('error', 'No assets selected');
+        }
+
+        $assets = Asset::find($request->get('ids'));
+        $asset_ids = $this->getAssetIdsFromBulkEdit($assets);
 
         if ($this->settings->qr_code=='1') {
             //if($this->settings->barcode_type === 'ZPL') {

@@ -39,6 +39,9 @@ class BulkAssetsController extends Controller
                         ->with('assets', Asset::find($asset_ids))
                         ->with('settings', Setting::getSettings())
                         ->with('count', 0);
+                case 'print':
+                    return view('hardware/bulk-print')
+                        ->with('assets', Asset::find($asset_ids));
                 case 'delete':
                     $assets = Asset::with('assignedTo', 'location')->find($asset_ids);
                     $assets->each(function ($asset) {

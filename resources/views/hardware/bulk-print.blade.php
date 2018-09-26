@@ -28,8 +28,8 @@
 
       <div class="box box-default">
         <div class="box-body">
-          @foreach ($assets as $key => $value)
-            <input type="hidden" name="ids[{{ $key }}]" value="1">
+          @foreach ($assets as $asset)
+            <input type="hidden" name="ids[]" value="{{ $asset->id }}">
           @endforeach
         </div> <!--/.box-body-->
 
